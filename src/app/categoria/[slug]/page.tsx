@@ -11,7 +11,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { Header } from "@/components/Header";
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
+interface CategoryPageProps {
+  params: {
+    slug: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
 
   return (
@@ -187,4 +194,10 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       </div>
     </div>
   );
+}
+
+export async function generateStaticParams() {
+  return categories.map((category) => ({
+    slug: category.name.toLowerCase().replace(/ /g, '-'),
+  }));
 } 
