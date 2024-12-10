@@ -19,3 +19,27 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Estilos personalizados para o Swiper */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #4e89ba !important;
+  background: white;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 20px !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: #4e89ba !important;
+}
+
+.product-carousel .swiper-slide {
+  height: auto !important;
+}
