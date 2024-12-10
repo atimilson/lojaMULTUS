@@ -10,20 +10,31 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline';
 import { Header } from "@/components/Header";
+import { Metadata } from 'next';
 
-interface CategoryPageProps {
-  params: {
-    slug: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
+// Tipagem correta para os parâmetros da página
+type Props = {
+  params: { slug: string }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+// Metadata dinâmica
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
+  
+  return {
+    title: category ? `${category.name} | Multus Comercial` : 'Categoria | Multus Comercial',
+    description: 'Encontre os melhores produtos na Multus Comercial'
+  }
+}
+
+// Página de categoria
+export default function CategoryPage({ params, searchParams }: Props) {
   const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
 
   return (
     <div className="flex-1 bg-gray-50">
-        <Header />
+      <Header />
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
@@ -196,6 +207,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   );
 }
 
+// Geração de rotas estáticas
 export async function generateStaticParams() {
   return categories.map((category) => ({
     slug: category.name.toLowerCase().replace(/ /g, '-'),
