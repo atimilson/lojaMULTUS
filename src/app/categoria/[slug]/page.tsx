@@ -13,13 +13,17 @@ import { Header } from "@/components/Header";
 import { Metadata } from 'next';
 
 // Tipagem correta para Next.js 14
-type Props = {
-  params: { slug: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+interface PageProps {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Metadata dinâmica
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: { slug: string } 
+}): Promise<Metadata> {
   const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
   
   return {
@@ -29,8 +33,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // Página de categoria
-export default function CategoryPage({ params, searchParams }: Props) {
-  const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
+export default async function CategoryPage({ params, searchParams }: PageProps) {
+  // Resolver as Promises dos parâmetros
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  
+  const category = categories.find(
+    c => c.name.toLowerCase().replace(/ /g, '-') === resolvedParams.slug
+  );
 
   return (
     <div className="flex-1 bg-gray-50">
