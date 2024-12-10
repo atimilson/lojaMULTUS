@@ -12,17 +12,16 @@ import {
 import { Header } from "@/components/Header";
 import { Metadata } from 'next';
 
-// Tipagem correta para Next.js 15
-type PageProps = {
-  params: { slug: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+// Tipagem para os parâmetros da página
+type CategoryPageParams = {
+  slug: string;
 }
 
 // Metadata dinâmica
 export async function generateMetadata({ 
   params 
 }: { 
-  params: { slug: string } 
+  params: CategoryPageParams 
 }): Promise<Metadata> {
   const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
   
@@ -33,10 +32,13 @@ export async function generateMetadata({
 }
 
 // Página de categoria
-export default async function CategoryPage({ 
+export default function Page({ 
   params,
   searchParams 
-}: PageProps) {
+}: {
+  params: CategoryPageParams;
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const category = categories.find(
     c => c.name.toLowerCase().replace(/ /g, '-') === params.slug
   );
@@ -217,7 +219,7 @@ export default async function CategoryPage({
 }
 
 // Geração de rotas estáticas
-export async function generateStaticParams() {
+export async function generateStaticParams(): Promise<CategoryPageParams[]> {
   return categories.map((category) => ({
     slug: category.name.toLowerCase().replace(/ /g, '-'),
   }));
