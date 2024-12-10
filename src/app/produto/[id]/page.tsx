@@ -157,7 +157,7 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="prose max-w-none">
               <p className="text-gray-600">
-                {product.description || 'Descrição detalhada do produto em breve.'}
+                {product.name || 'Descrição detalhada do produto em breve.'}
               </p>
             </div>
           </div>
