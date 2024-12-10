@@ -141,25 +141,29 @@ export const categories = [
     id: 1,
     name: "Ferramentas Elétricas",
     image: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=800&auto=format",
-    itemCount: 450
+    itemCount: 450,
+    description : 'Encontre aqui os melhores produtos de ferramentas elétricas da Multus Comercial'
   },
   {
     id: 2,
     name: "Compressores",
     image: "https://images.unsplash.com/photo-1590959651373-a3db0f38a961?w=800&auto=format",
-    itemCount: 120
+    itemCount: 120,
+    description : 'Encontre aqui os melhores produtos de ferramentas elétricas da Multus Comercial'
   },
   {
     id: 3,
     name: "Ferramentas Manuais",
     image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&auto=format",
-    itemCount: 300
+    itemCount: 300,
+    description : 'Encontre aqui os melhores produtos de ferramentas elétricas da Multus Comercial'
   },
   {
     id: 4,
     name: "Equipamentos de Proteção",
     image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format",
-    itemCount: 200
+    itemCount: 200,
+    description : 'Encontre aqui os melhores produtos de ferramentas elétricas da Multus Comercial'
   }
 ];
 

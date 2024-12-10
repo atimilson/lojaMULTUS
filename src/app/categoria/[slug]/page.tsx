@@ -12,25 +12,26 @@ import {
 import { Header } from "@/components/Header";
 import { Metadata } from 'next';
 
-// Tipagem correta para os parâmetros da página
-type Props = {
-  params: { slug: string }
-  searchParams: { [key: string]: string | string[] | undefined }
+// Tipagem correta usando PageProps do Next.js
+interface PageProps {
+  params: Promise<{ slug: string }>;
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 // Metadata dinâmica
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
   
   return {
     title: category ? `${category.name} | Multus Comercial` : 'Categoria | Multus Comercial',
-    description: 'Encontre os melhores produtos na Multus Comercial'
+    description: category?.description || 'Encontre os melhores produtos na Multus Comercial'
   }
 }
 
 // Página de categoria
-export default function CategoryPage({ params, searchParams }: Props) {
-  const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
+export default async function CategoryPage({ params, searchParams }: PageProps) {
+  const resolvedParams = await params;
+  const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === resolvedParams.slug);
 
   return (
     <div className="flex-1 bg-gray-50">
