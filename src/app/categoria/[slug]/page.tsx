@@ -12,14 +12,14 @@ import {
 import { Header } from "@/components/Header";
 import { Metadata } from 'next';
 
-// Tipagem correta usando PageProps do Next.js
-interface PageProps {
-  params: Promise<{ slug: string }>;
+// Tipagem correta para Next.js 14
+type Props = {
+  params: { slug: string };
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
 // Metadata dinâmica
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
   
   return {
@@ -29,9 +29,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 // Página de categoria
-export default async function CategoryPage({ params, searchParams }: PageProps) {
-  const resolvedParams = await params;
-  const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === resolvedParams.slug);
+export default function CategoryPage({ params, searchParams }: Props) {
+  const category = categories.find(c => c.name.toLowerCase().replace(/ /g, '-') === params.slug);
 
   return (
     <div className="flex-1 bg-gray-50">
