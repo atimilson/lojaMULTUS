@@ -126,13 +126,7 @@ export function Header() {
               </div>
 
               <div className="flex items-center gap-6">
-                  <a href="/ofertas" className="group flex items-center gap-2 py-4 hover:text-gray-200">
-                    <span className="font-medium">Ofertas do Dia</span>
-                  </a>
-                  <a href="/lancamentos" className="group flex items-center gap-2 py-4 hover:text-gray-200">
-                    <span className="font-medium">Lançamentos</span>
-                  </a>
-                  <div className="group relative">
+              <div className="group relative">
                     <a href="/marcas" className="flex items-center gap-2 py-4 hover:text-gray-200">
                       <span className="font-medium">Marcas</span>
                       <span className="text-xs">▼</span>
@@ -152,6 +146,10 @@ export function Header() {
                   <a href="/promocoes" className="flex items-center gap-2 py-4 hover:text-gray-200">
                     <span className="font-medium">Promoções</span>
                   </a>
+                  <a href="/lancamentos" className="group flex items-center gap-2 py-4 hover:text-gray-200">
+                    <span className="font-medium">Lançamentos</span>
+                  </a>
+                  
                 </div>
             </div>
 

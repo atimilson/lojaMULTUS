@@ -1,11 +1,16 @@
 import Image from "next/image";
-import { featuredProducts, categories, bannerImage, banners } from "../mocks/products";
-import { BannerCarousel } from '@/components/BannerCarousel'
-import { ProductCarousel } from '@/components/ProductCarousel'
-import { 
-  MagnifyingGlassIcon, 
-  UserIcon, 
-  HeartIcon, 
+import {
+  featuredProducts,
+  categories,
+  bannerImage,
+  banners,
+} from "../mocks/products";
+import { BannerCarousel } from "@/components/BannerCarousel";
+import { ProductCarousel } from "@/components/ProductCarousel";
+import {
+  MagnifyingGlassIcon,
+  UserIcon,
+  HeartIcon,
   ShoppingCartIcon,
   Bars3Icon,
   ChevronDownIcon,
@@ -15,16 +20,16 @@ import {
   CreditCardIcon,
   ShieldCheckIcon,
   CubeIcon,
-  EnvelopeIcon
-} from '@heroicons/react/24/outline'
+  EnvelopeIcon,
+} from "@heroicons/react/24/outline";
 
-import { 
-  FaFacebook, 
-  FaInstagram, 
-  FaYoutube, 
-  FaLinkedin, 
-  FaWhatsapp 
-} from 'react-icons/fa'
+import {
+  FaFacebook,
+  FaInstagram,
+  FaYoutube,
+  FaLinkedin,
+  FaWhatsapp,
+} from "react-icons/fa";
 import { Header } from "@/components/Header";
 
 export default function Home() {
@@ -36,54 +41,18 @@ export default function Home() {
       {/* Conteúdo principal */}
       <main className="flex-1">
         <BannerCarousel banners={banners} />
-        
-        <ProductCarousel 
+
+        <ProductCarousel
           title="Ofertas Imperdíveis"
           products={featuredProducts}
           viewAllLink="/ofertas"
         />
-        
-        <ProductCarousel 
+
+        <ProductCarousel
           title="Mais Vendidos"
           products={featuredProducts}
           viewAllLink="/mais-vendidos"
         />
-        
-        {/* Seção de benefícios */}
-        <section className="py-12 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="flex items-center gap-4">
-                <TruckIcon className="w-8 h-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Frete Grátis</h3>
-                  <p className="text-sm text-gray-700">Para compras acima de R$ 299</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <CreditCardIcon className="w-8 h-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Parcele em até 10x</h3>
-                  <p className="text-sm text-gray-900">Sem juros no cartão</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <ShieldCheckIcon className="w-8 h-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Compra Segura</h3>
-                  <p className="text-sm text-gray-900">Site 100% seguro</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <CubeIcon className="w-8 h-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Entrega Rápida</h3>
-                  <p className="text-sm text-gray-600">Para todo Brasil</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Footer */}
@@ -96,7 +65,9 @@ export default function Home() {
                 <EnvelopeIcon className="w-8 h-8 text-primary" />
                 <div>
                   <h3 className="font-bold text-lg">Receba nossas ofertas</h3>
-                  <p className="text-gray-400">Cadastre-se e receba promoções exclusivas!</p>
+                  <p className="text-gray-400">
+                    Cadastre-se e receba promoções exclusivas!
+                  </p>
                 </div>
               </div>
               <div className="flex-1 max-w-xl w-full">
@@ -122,11 +93,46 @@ export default function Home() {
             <div>
               <h3 className="font-bold mb-4 text-lg">Institucional</h3>
               <ul className="space-y-2">
-                <li><a href="/sobre" className="text-gray-400 hover:text-primary transition-colors">Sobre nós</a></li>
-                <li><a href="/trabalhe-conosco" className="text-gray-400 hover:text-primary transition-colors">Trabalhe Conosco</a></li>
-                <li><a href="/politica-privacidade" className="text-gray-400 hover:text-primary transition-colors">Política de Privacidade</a></li>
-                <li><a href="/termos" className="text-gray-400 hover:text-primary transition-colors">Termos de Uso</a></li>
-                <li><a href="/blog" className="text-gray-400 hover:text-primary transition-colors">Blog</a></li>
+                <li>
+                  <a
+                    href="/sobre"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Sobre nós
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/trabalhe-conosco"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Trabalhe Conosco
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/politica-privacidade"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Política de Privacidade
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/termos"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Termos de Uso
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/blog"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Blog
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -134,11 +140,46 @@ export default function Home() {
             <div>
               <h3 className="font-bold mb-4 text-lg">Atendimento</h3>
               <ul className="space-y-2">
-                <li><a href="/central-ajuda" className="text-gray-400 hover:text-primary transition-colors">Central de Ajuda</a></li>
-                <li><a href="/fale-conosco" className="text-gray-400 hover:text-primary transition-colors">Fale Conosco</a></li>
-                <li><a href="/whatsapp" className="text-gray-400 hover:text-primary transition-colors">WhatsApp</a></li>
-                <li><a href="/trocas" className="text-gray-400 hover:text-primary transition-colors">Trocas e Devoluções</a></li>
-                <li><a href="/ouvidoria" className="text-gray-400 hover:text-primary transition-colors">Ouvidoria</a></li>
+                <li>
+                  <a
+                    href="/central-ajuda"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Central de Ajuda
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/fale-conosco"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Fale Conosco
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/whatsapp"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    WhatsApp
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/trocas"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Trocas e Devoluções
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/ouvidoria"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Ouvidoria
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -146,10 +187,38 @@ export default function Home() {
             <div>
               <h3 className="font-bold mb-4 text-lg">Minha Conta</h3>
               <ul className="space-y-2">
-                <li><a href="/meus-pedidos" className="text-gray-400 hover:text-primary transition-colors">Meus Pedidos</a></li>
-                <li><a href="/cadastro" className="text-gray-400 hover:text-primary transition-colors">Cadastre-se</a></li>
-                <li><a href="/favoritos" className="text-gray-400 hover:text-primary transition-colors">Lista de Desejos</a></li>
-                <li><a href="/cartoes" className="text-gray-400 hover:text-primary transition-colors">Meus Cartões</a></li>
+                <li>
+                  <a
+                    href="/meus-pedidos"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Meus Pedidos
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/cadastro"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Cadastre-se
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/favoritos"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Lista de Desejos
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/cartoes"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Meus Cartões
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -157,9 +226,30 @@ export default function Home() {
             <div>
               <h3 className="font-bold mb-4 text-lg">Vendas</h3>
               <ul className="space-y-2">
-                <li><a href="/venda-na-multus" className="text-gray-400 hover:text-primary transition-colors">Venda na Multus</a></li>
-                <li><a href="/vendas-corporativas" className="text-gray-400 hover:text-primary transition-colors">Vendas Corporativas</a></li>
-                <li><a href="/marketplace" className="text-gray-400 hover:text-primary transition-colors">Marketplace</a></li>
+                <li>
+                  <a
+                    href="/venda-na-multus"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Venda na Multus
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/vendas-corporativas"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Vendas Corporativas
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/marketplace"
+                    className="text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Marketplace
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -181,19 +271,34 @@ export default function Home() {
                 </li>
                 <li>
                   <div className="flex gap-4">
-                    <a href="https://facebook.com" className="text-gray-400 hover:text-primary transition-colors">
+                    <a
+                      href="https://facebook.com"
+                      className="text-gray-400 hover:text-primary transition-colors"
+                    >
                       <FaFacebook className="w-6 h-6" />
                     </a>
-                    <a href="https://instagram.com" className="text-gray-400 hover:text-primary transition-colors">
+                    <a
+                      href="https://instagram.com"
+                      className="text-gray-400 hover:text-primary transition-colors"
+                    >
                       <FaInstagram className="w-6 h-6" />
                     </a>
-                    <a href="https://youtube.com" className="text-gray-400 hover:text-primary transition-colors">
+                    <a
+                      href="https://youtube.com"
+                      className="text-gray-400 hover:text-primary transition-colors"
+                    >
                       <FaYoutube className="w-6 h-6" />
                     </a>
-                    <a href="https://linkedin.com" className="text-gray-400 hover:text-primary transition-colors">
+                    <a
+                      href="https://linkedin.com"
+                      className="text-gray-400 hover:text-primary transition-colors"
+                    >
                       <FaLinkedin className="w-6 h-6" />
                     </a>
-                    <a href="https://whatsapp.com" className="text-gray-400 hover:text-primary transition-colors">
+                    <a
+                      href="https://whatsapp.com"
+                      className="text-gray-400 hover:text-primary transition-colors"
+                    >
                       <FaWhatsapp className="w-6 h-6" />
                     </a>
                   </div>
@@ -212,10 +317,20 @@ export default function Home() {
                 <h4 className="font-semibold mb-4">Formas de Pagamento</h4>
                 <div className="flex flex-wrap gap-2">
                   <Image src="/visa.png" alt="Visa" width={40} height={25} />
-                  <Image src="/mastercard.png" alt="Mastercard" width={40} height={25} />
+                  <Image
+                    src="/mastercard.png"
+                    alt="Mastercard"
+                    width={40}
+                    height={25}
+                  />
                   <Image src="/elo.png" alt="Elo" width={40} height={25} />
                   <Image src="/pix.png" alt="Pix" width={40} height={25} />
-                  <Image src="/boleto.png" alt="Boleto" width={40} height={25} />
+                  <Image
+                    src="/boleto.png"
+                    alt="Boleto"
+                    width={40}
+                    height={25}
+                  />
                 </div>
               </div>
 
@@ -223,8 +338,18 @@ export default function Home() {
               <div>
                 <h4 className="font-semibold mb-4">Segurança</h4>
                 <div className="flex gap-4">
-                  <Image src="/ssl.png" alt="SSL" width={80} height={40} />
-                  <Image src="/pci.png" alt="PCI" width={80} height={40} />
+                  <Image
+                    src="https://www.multuscomercial.com.br/img/footer/ssl.png"
+                    alt="SSL"
+                    width={100}
+                    height={30}
+                  />
+                  <Image
+                    src="https://www.multuscomercial.com.br/img/footer/google-security.png"
+                    alt="PCI"
+                    width={80}
+                    height={40}
+                  />
                 </div>
               </div>
 
@@ -247,6 +372,30 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
               <p>© 2024 Multus Comercial. Todos os direitos reservados.</p>
               <p>CNPJ: 24.753.864/0001-42</p>
+            </div>
+            <div className="mt-4 text-center text-gray-400">
+              <p>Avenida General Mello, N° 3255, Jardim Califórnia, Cuiabá - MT, CEP 78070-300 | CNPJ 24.753.864/0001-42 | (65) 2136-4199 | vendas@multuscomercial.com.br</p>
+              <p>Todos os preços, regras e promoções são válidas para produtos vendidos e entregues pela loja virtual. O preço válido será o da finalização da compra.</p>
+            </div>
+            {/* MCN Sistemas */}
+            <div className="mt-4 flex flex-col items-center justify-center gap-2 text-sm text-gray-400">
+              <span className="text-center font-extrabold">Desenvolvido e Hospedado por:</span>
+              <p>
+                <a 
+                  href="https://www.mcnsistemas.com.br" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <Image
+                    src="https://www.mcnsistemas.com.br/_next/image?url=%2Fassets%2Fimages%2Fmcnsistemas-logo.png&w=256&q=100"
+                    alt="MCN Sistemas"
+                    width={200}
+                    height={60}
+                    className="object-contain"
+                  />
+                </a>
+              </p>
             </div>
           </div>
         </div>
