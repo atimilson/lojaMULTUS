@@ -45,13 +45,13 @@ export default function Home() {
         <ProductCarousel
           title="Ofertas Imperdíveis"
           products={featuredProducts}
-          viewAllLink="/ofertas"
+          viewAllLink="/promocoes"
         />
 
         <ProductCarousel
           title="Mais Vendidos"
           products={featuredProducts}
-          viewAllLink="/mais-vendidos"
+          viewAllLink="/promocoes"
         />
       </main>
 
