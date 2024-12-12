@@ -304,7 +304,7 @@ export default function BrandPage({
             <div className="mt-8 flex justify-center">
               <nav className="flex items-center gap-2">
                 <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-700">Anterior</button>
-                <button className="px-4 py-2 bg-primary text-white rounded-lg text-gray-700">1</button>
+                <button className="px-4 py-2 bg-primary rounded-lg text-gray-700">1</button>
                 <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-700">2</button>
                 <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-700">3</button>
                 <span className="px-4 py-2 text-gray-700">...</span>
