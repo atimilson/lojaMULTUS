@@ -1,19 +1,57 @@
+'use client'
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { featuredProducts } from "@/mocks/products";
+import { useApi } from "@/hooks/useApi";
+import { useAuth } from "@/contexts/AuthContext";
+import { Product } from "@/types/product";
 import { 
   ShoppingCartIcon, 
   HeartIcon,
   TruckIcon,
   ShieldCheckIcon,
   CreditCardIcon,
-  ArrowLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { Header } from "@/components/Header";
+import { ShippingCalculator } from '@/components/ShippingCalculator';
 
 export default function ProductDetails({ params }: { params: { id: string } }) {
-  const product = featuredProducts.find(p => p.id === parseInt(params.id));
+  const { isLoading: isAuthLoading, error: authError } = useAuth();
+  const { fetchApi } = useApi();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        // Busca o produto específico
+        const [productData] = await fetchApi(`/produto/ecommerce?empresa=0&busca=${params.id}`);
+        setProduct(productData);
+
+        // Busca produtos relacionados (usando a lista completa)
+        const allProducts = await fetchApi('/produto/ecommerce');
+        setRelatedProducts(allProducts.slice(0, 4)); // Pegando os 4 primeiros produtos como relacionados
+      } catch (error) {
+        console.error('Erro ao carregar produto:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (!isAuthLoading && !authError) {
+      loadProduct();
+    }
+  }, [params.id, isAuthLoading, authError]);
+
+  if (isLoading || isAuthLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+    </div>;
+  }
 
   if (!product) {
     return <div>Produto não encontrado</div>;
@@ -21,7 +59,7 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
 
   return (
     <main className="flex-1 bg-gray-50">
-        <Header />
+      <Header />
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
@@ -29,9 +67,9 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
             <ol className="flex items-center gap-2">
               <li><Link href="/" className="hover:text-primary">Home</Link></li>
               <li>/</li>
-              <li><Link href={`/categoria/${product.category.toLowerCase()}`} className="hover:text-primary">{product.category}</Link></li>
+              <li><Link href={`/categoria/${product.Categoria.toLowerCase()}`} className="hover:text-primary">{product.Categoria}</Link></li>
               <li>/</li>
-              <li className="text-gray-900">{product.name}</li>
+              <li className="text-gray-900">{product.Descricao}</li>
             </ol>
           </nav>
         </div>
@@ -45,19 +83,19 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
             <div className="space-y-4">
               <div className="relative aspect-square bg-white rounded-lg overflow-hidden border">
                 <Image
-                  src={product.image}
-                  alt={product.name}
+                  src={product.Imagens[0]?.URL || '/placeholder-product.jpg'}
+                  alt={product.Descricao}
                   fill
                   className="object-contain p-4"
                 />
               </div>
-              {/* Miniaturas (se houver mais imagens) */}
+              {/* Miniaturas */}
               <div className="grid grid-cols-4 gap-2">
-                {[1, 2, 3, 4].map((_, index) => (
+                {product.Imagens.map((img, index) => (
                   <button key={index} className="relative aspect-square border rounded-lg overflow-hidden">
                     <Image
-                      src={product.image}
-                      alt={`${product.name} - Imagem ${index + 1}`}
+                      src={img.URL}
+                      alt={`${product.Descricao} - Imagem ${index + 1}`}
                       fill
                       className="object-contain p-2"
                     />
@@ -70,41 +108,55 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
             <div className="space-y-6">
               {/* Nome e Marca */}
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
-                <p className="text-gray-600 mt-1">Marca: <span className="font-medium">{product.brand}</span></p>
-                <p className="text-gray-600">Código: {product.id.toString().padStart(6, '0')}</p>
+                <h1 className="text-2xl font-bold text-gray-900">{product.Descricao}</h1>
+                <p className="text-gray-600 mt-1">Marca: <span className="font-medium">{product.Marca}</span></p>
+                <p className="text-gray-600">Código: {product.Produto.toString().padStart(6, '0')}</p>
               </div>
 
               {/* Preços */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                {product.oldPrice && (
+                {product.PrecoPromocional > 0 && (
                   <p className="text-gray-500 line-through">
-                    De: R$ {product.oldPrice.toFixed(2)}
+                    De: R$ {product.Preco.toFixed(2)}
                   </p>
                 )}
                 <p className="text-3xl font-bold text-primary">
-                  R$ {product.price.toFixed(2)}
+                  R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Em até 10x de R$ {(product.price / 10).toFixed(2)} sem juros
+                  Em até 10x de R$ {((product.PrecoPromocional || product.Preco) / 10).toFixed(2)} sem juros
                 </p>
                 <p className="text-sm text-primary font-medium mt-2">
-                  À vista R$ {(product.price * 0.9).toFixed(2)} (10% de desconto)
+                  À vista R$ {((product.PrecoPromocional || product.Preco) * 0.9).toFixed(2)} (10% de desconto)
                 </p>
               </div>
+
+              {/* Calculadora de Frete */}
+              <ShippingCalculator productId={product.Produto} />
 
               {/* Quantidade e Botões */}
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <label className="text-gray-600">Quantidade:</label>
                   <div className="flex items-center border rounded-lg">
-                    <button className="px-3 py-2 border-r hover:bg-gray-50">-</button>
+                    <button 
+                      className="px-3 py-2 border-r hover:bg-gray-50"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    >
+                      -
+                    </button>
                     <input 
                       type="number" 
-                      value="1" 
+                      value={quantity} 
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                       className="w-16 text-center py-2 focus:outline-none" 
                     />
-                    <button className="px-3 py-2 border-l hover:bg-gray-50">+</button>
+                    <button 
+                      className="px-3 py-2 border-l hover:bg-gray-50"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
@@ -157,7 +209,7 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="prose max-w-none">
               <p className="text-gray-600">
-                {product.name || 'Descrição detalhada do produto em breve.'}
+                {product.DescEcommerce || product.Observacao || 'Descrição detalhada do produto em breve.'}
               </p>
             </div>
           </div>
@@ -168,7 +220,7 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Produtos Relacionados</h2>
             <Link 
-              href={`/categoria/${product.category.toLowerCase()}`} 
+              href={`/categoria/${product.Categoria.toLowerCase()}`} 
               className="text-primary hover:text-primary-dark font-medium flex items-center gap-2"
             >
               Ver Todos
@@ -176,30 +228,30 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {featuredProducts.slice(0, 4).map((relatedProduct) => (
-              <Link href={`/produto/${relatedProduct.id}`} key={relatedProduct.id}>
+            {relatedProducts.map((relatedProduct) => (
+              <Link href={`/produto/${relatedProduct.Produto}`} key={relatedProduct.Produto}>
                 <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
                   <div className="relative aspect-square mb-3">
                     <Image
-                      src={relatedProduct.image}
-                      alt={relatedProduct.name}
+                      src={relatedProduct.Imagens[0]?.URL || '/placeholder-product.jpg'}
+                      alt={relatedProduct.Descricao}
                       fill
                       className="object-contain p-2"
                     />
                   </div>
                   <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
-                    {relatedProduct.name}
+                    {relatedProduct.Descricao}
                   </h3>
-                  {relatedProduct.oldPrice && (
+                  {relatedProduct.PrecoPromocional > 0 && (
                     <p className="text-sm text-gray-500 line-through">
-                      R$ {relatedProduct.oldPrice.toFixed(2)}
+                      R$ {relatedProduct.Preco.toFixed(2)}
                     </p>
                   )}
                   <p className="text-lg font-bold text-primary">
-                    R$ {relatedProduct.price.toFixed(2)}
+                    R$ {(relatedProduct.PrecoPromocional || relatedProduct.Preco).toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-600">
-                    Em até 10x de R$ {(relatedProduct.price / 10).toFixed(2)}
+                    Em até 10x de R$ {((relatedProduct.PrecoPromocional || relatedProduct.Preco) / 10).toFixed(2)}
                   </p>
                 </div>
               </Link>

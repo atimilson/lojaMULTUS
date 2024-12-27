@@ -1,3 +1,7 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { useApi } from '@/hooks/useApi';
+import { useAuth } from '@/contexts/AuthContext';
 import Image from "next/image";
 import {
   featuredProducts,
@@ -31,27 +35,66 @@ import {
   FaWhatsapp,
 } from "react-icons/fa";
 import { Header } from "@/components/Header";
+import { Product } from "@/types/product";
 
 export default function Home() {
+  const { isLoading: isAuthLoading, error: authError } = useAuth();
+  const { fetchApi } = useApi();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await fetchApi('/produto/ecommerce');
+        setProducts(data);
+      } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (!isAuthLoading && !authError) {
+      loadProducts();
+    }
+  }, [isAuthLoading, authError]);
+
+  if (isAuthLoading || isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+    </div>;
+  }
+
+  if (authError) {
+    return <div className="flex items-center justify-center min-h-screen text-red-500">
+      Erro: {authError}
+    </div>;
+  }
+
+  // Filtra produtos em promoção
+  const promoProducts = products.filter(p => p.PrecoPromocional > 0);
+  
+  // Filtra produtos mais vendidos (você pode ajustar essa lógica conforme necessário)
+  const bestSellers = products.slice(0, 8);
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header com múltiplas linhas */}
       <Header />
 
-      {/* Conteúdo principal */}
       <main className="flex-1">
         <BannerCarousel banners={banners} />
 
         <ProductCarousel
           title="Ofertas Imperdíveis"
-          products={featuredProducts}
+          products={promoProducts}
           viewAllLink="/promocoes"
         />
 
         <ProductCarousel
           title="Mais Vendidos"
-          products={featuredProducts}
-          viewAllLink="/promocoes"
+          products={bestSellers}
+          viewAllLink="/mais-vendidos"
         />
       </main>
 

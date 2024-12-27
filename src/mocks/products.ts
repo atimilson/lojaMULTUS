@@ -175,56 +175,21 @@ export const banners = [
     title: "Ferramentas Profissionais",
     subtitle: "As melhores marcas com os melhores preços",
     buttonText: "Ver Ofertas",
-    image: "https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=1600&auto=format"
+    image: "https://www.multuscomercial.com.br/storage/empresas/24753864000142/slidesQiLh5k38gDinMDTmo42RYiJkmqEhPM-metaW01VTFRVU10gMDJfMTIgU0xJREUgU0hPVyAoMikucG5n-.jpeg"
   },
   {
     id: 2,
     title: "Equipamentos de Proteção",
     subtitle: "Segurança em primeiro lugar",
     buttonText: "Confira",
-    image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1600&auto=format"
+    image: "https://www.multuscomercial.com.br/storage/empresas/24753864000142/slidesaGKDzhyHVRItv6f7s4Eoq62jE4Oa1a-metaQmFubmVyLU3DunR1b3NCQU5ORVItMi5wbmc=-.jpeg"
   },
   {
     id: 3,
     title: "Black Friday Antecipada",
     subtitle: "Até 70% OFF em produtos selecionados",
     buttonText: "Aproveite Agora",
-    image: "https://images.unsplash.com/photo-1580402427914-a6cc60d7d44f?w=1600&auto=format"
+    image: "https://www.multuscomercial.com.br/storage/empresas/24753864000142/slidesDLMQBRJZw0MtQrNFL1JnymMaWGc7Lx-metaQmFubmVyLU3DunR1b3NCQU5ORVItMSAoMSkucG5n-.jpeg"
   },
-  {
-    id: 4,
-    title: "Linha Profissional DEWALT",
-    subtitle: "Qualidade e durabilidade para seu trabalho",
-    buttonText: "Conheça a Linha",
-    image: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=1600&auto=format"
-  },
-  {
-    id: 5,
-    title: "Compre Online, Retire na Loja",
-    subtitle: "Mais praticidade para você",
-    buttonText: "Saiba Mais",
-    image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=1600&auto=format"
-  },
-  {
-    id: 6,
-    title: "Ferramentas para Construção",
-    subtitle: "Tudo para sua obra com preços especiais",
-    buttonText: "Explorar",
-    image: "https://images.unsplash.com/photo-1590959651373-a3db0f38a961?w=1600&auto=format"
-  },
-  {
-    id: 7,
-    title: "Linha Profissional Bosch",
-    subtitle: "Tecnologia alemã para seu trabalho",
-    buttonText: "Ver Produtos",
-    image: "https://images.unsplash.com/photo-1588783952556-a3772b26a2a3?w=1600&auto=format"
-  },
-  {
-    id: 8,
-    title: "Frete Grátis SP",
-    subtitle: "Em compras acima de R$ 299",
-    buttonText: "Comprar Agora",
-    image: "https://images.unsplash.com/photo-1581147036324-c1c88bb6eb4e?w=1600&auto=format"
-  }
 ];
 
