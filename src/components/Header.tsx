@@ -1,6 +1,8 @@
+'use client'
+
 import Image from "next/image";
 import Link from "next/link";
-import { categories } from "@/mocks/products";
+import { useBrands } from "@/hooks/useBrands";
 import { 
   MagnifyingGlassIcon, 
   UserIcon, 
@@ -11,8 +13,27 @@ import {
   BuildingStorefrontIcon,
   ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline'
+import { useState } from "react";
 
 export function Header() {
+  const { brands, isLoading: isBrandsLoading } = useBrands();
+  const [searchBrand, setSearchBrand] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const filteredBrands = brands.filter(brand => 
+    brand.Descricao.toLowerCase().includes(searchBrand.toLowerCase())
+  );
+
+  // Organiza as marcas por letra inicial
+  const groupedBrands = filteredBrands.reduce((acc, brand) => {
+    const firstLetter = brand.Descricao.charAt(0).toUpperCase();
+    if (!acc[firstLetter]) {
+      acc[firstLetter] = [];
+    }
+    acc[firstLetter].push(brand);
+    return acc;
+  }, {} as Record<string, typeof brands>);
+
   return (
     <header className="sticky top-0 z-50">
       {/* Faixa superior - Informações de entrega/CEP */}
@@ -90,67 +111,88 @@ export function Header() {
         </div>
       </div>
 
-      {/* Linha de navegação - Categorias e Links */}
+      {/* Linha de navegação - Marcas e Links */}
       <nav className="bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {/* Menu de categorias com dropdown */}
-              <div className="relative group">
-                <button className="flex items-center gap-2 py-4 hover:text-gray-200 transition-colors">
+              {/* Menu de marcas com dropdown */}
+              <div className="relative">
+                <button 
+                  className="flex items-center gap-2 py-4 hover:text-gray-200 transition-colors"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
                   <Bars3Icon className="w-6 h-6" />
-                  <span className="font-medium">Todas as Categorias</span>
+                  <span className="font-medium">Marcas</span>
                   <ChevronDownIcon className="w-4 h-4" />
                 </button>
                 
-                {/* Dropdown menu */}
-                <div className="absolute top-full left-0 w-64 bg-white shadow-lg rounded-b-lg hidden group-hover:block">
-                  <div className="py-2">
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/categoria/${category.name.toLowerCase().replace(/ /g, '-')}`}
-                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-gray-700"
-                      >
-                        <Image
-                          src={category.image}
-                          alt={category.name}
-                          width={24}
-                          height={24}
+                {/* Dropdown menu melhorado */}
+                {isDropdownOpen && (
+                  <div 
+                    className="absolute top-full left-0 w-screen max-w-4xl bg-white shadow-lg rounded-b-lg"
+                    style={{ maxHeight: 'calc(100vh - 200px)' }}
+                  >
+                    {/* Barra de pesquisa */}
+                    <div className="sticky top-0 bg-white p-4 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Buscar marca..."
+                          value={searchBrand}
+                          onChange={(e) => setSearchBrand(e.target.value)}
+                          className="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         />
-                        {category.name}
+                        <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      </div>
+                    </div>
+
+                    {isBrandsLoading ? (
+                      <div className="p-4 text-gray-500">Carregando...</div>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-6 p-6 overflow-y-auto">
+                        {Object.entries(groupedBrands).map(([letter, letterBrands]) => (
+                          <div key={letter} className="space-y-2">
+                            <h3 className="font-bold text-primary text-lg">{letter}</h3>
+                            <div className="space-y-1">
+                              {letterBrands.map((brand) => (
+                                <Link
+                                  key={brand.Codigo}
+                                  href={`/marca/${encodeURIComponent(brand.Descricao.toLowerCase())}`}
+                                  className="block px-2 py-1 rounded hover:bg-gray-50 text-gray-700 text-sm"
+                                  onClick={() => setIsDropdownOpen(false)}
+                                >
+                                  {brand.Descricao}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Footer do dropdown */}
+                    <div className="sticky bottom-0 bg-gray-50 p-4 border-t text-center">
+                      <Link
+                        href="/marcas"
+                        className="text-primary hover:text-primary-dark font-medium"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        Ver todas as marcas →
                       </Link>
-                    ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex items-center gap-6">
-              <div className="group relative">
-                    <a href="/marcas" className="flex items-center gap-2 py-4 hover:text-gray-200">
-                      <span className="font-medium">Marcas</span>
-                      <span className="text-xs">▼</span>
-                    </a>
-                    {/* Dropdown de marcas */}
-                    <div className="absolute top-full left-0 w-48 bg-white shadow-lg rounded-lg hidden group-hover:block">
-                      <div className="py-2">
-                        <a href="/marca/dewalt" className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary">DEWALT</a>
-                        <a href="/marca/bosch" className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary">BOSCH</a>
-                        <a href="/marca/makita" className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary">MAKITA</a>
-                        <a href="/marca/tramontina" className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary">TRAMONTINA</a>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <a href="/marcas" className="block px-4 py-2 text-primary hover:bg-gray-50">Ver todas as marcas →</a>
-                      </div>
-                    </div>
-                  </div>
-                  <a href="/promocoes" className="flex items-center gap-2 py-4 hover:text-gray-200">
-                    <span className="font-medium">Promoções</span>
-                  </a>
-                  <a href="/lancamentos" className="group flex items-center gap-2 py-4 hover:text-gray-200">
-                    <span className="font-medium">Lançamentos</span>
-                  </a>
-                  
-                </div>
+                <Link href="/promocoes" className="flex items-center gap-2 py-4 hover:text-gray-200">
+                  <span className="font-medium">Promoções</span>
+                </Link>
+                <Link href="/lancamentos" className="flex items-center gap-2 py-4 hover:text-gray-200">
+                  <span className="font-medium">Lançamentos</span>
+                </Link>
+              </div>
             </div>
 
             {/* Links secundários */}
