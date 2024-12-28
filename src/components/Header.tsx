@@ -158,7 +158,7 @@ export function Header() {
                               {letterBrands.map((brand) => (
                                 <Link
                                   key={brand.Codigo}
-                                  href={`/marca/${encodeURIComponent(brand.Descricao.toLowerCase())}`}
+                                  href={`/marca/${encodeURIComponent(brand.Codigo)}`}
                                   className="block px-2 py-1 rounded hover:bg-gray-50 text-gray-700 text-sm"
                                   onClick={() => setIsDropdownOpen(false)}
                                 >

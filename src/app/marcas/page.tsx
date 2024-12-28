@@ -98,7 +98,7 @@ export default function BrandsPage() {
                   {letterBrands.map((brand) => (
                     <Link
                       key={brand.Codigo}
-                      href={`/marca/${encodeURIComponent(brand.Descricao.toLowerCase())}`}
+                      href={`/marca/${encodeURIComponent(brand.Codigo)}`}
                       className="block py-2 px-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
                     >
                       {brand.Descricao}
