@@ -21,7 +21,7 @@ type BannerCarouselProps = {
 
 export function BannerCarousel({ banners }: BannerCarouselProps) {
   return (
-    <section className="bg-gray-100">
+    <section className="bg-gray-100 w-full">
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
         spaceBetween={0}
@@ -29,18 +29,24 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
         navigation
         pagination={{ clickable: true }}
         autoplay={{ delay: 5000 }}
-        className="h-[500px]"
+        className="w-full relative"
+        style={{
+          // Altura responsiva usando aspect ratio
+          aspectRatio: '32/9', // Para desktop
+        }}
       >
         {banners.map((banner) => (
-          <SwiperSlide key={banner.id}>
-            <div className="relative h-full w-full">
+          <SwiperSlide key={banner.id} className="relative w-full h-full">
+            <div className="absolute inset-0">
               <Image
                 src={banner.image}
                 alt={banner.title}
                 fill
-                className="object-cover"
+                sizes="100vw"
+                className="object-contain"
                 priority
               />
+              
             </div>
           </SwiperSlide>
         ))}

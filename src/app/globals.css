@@ -59,3 +59,70 @@ body {
 .dropdown-animation {
   animation: fadeIn 0.2s ease-out;
 }
+
+/* Estilos responsivos para o Swiper */
+.swiper {
+  @apply w-full;
+}
+
+/* Altura responsiva para diferentes tamanhos de tela */
+@media (max-width: 640px) {
+  .swiper {
+    aspect-ratio: 1/1; /* Quadrado para mobile */
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .swiper {
+    aspect-ratio: 16/9; /* Widescreen para tablets */
+  }
+}
+
+@media (min-width: 1025px) {
+  .swiper {
+    aspect-ratio: 21/9; /* Ultra-wide para desktop */
+  }
+}
+
+/* Melhorias nos controles do Swiper */
+.swiper-button-next,
+.swiper-button-prev {
+  @apply hidden md:flex items-center justify-center;
+  @apply w-10 h-10 md:w-12 md:h-12;
+  @apply bg-white/90 hover:bg-white;
+  @apply rounded-full shadow-lg;
+  @apply text-primary;
+  @apply transition-all duration-300;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  @apply text-lg md:text-2xl;
+}
+
+.swiper-pagination-bullet {
+  @apply w-2 h-2 md:w-3 md:h-3;
+  @apply bg-white/50;
+  @apply transition-all duration-300;
+}
+
+.swiper-pagination-bullet-active {
+  @apply bg-primary;
+  @apply w-3 h-3 md:w-4 md:h-4;
+}
+
+/* Animação de fade para o conteúdo do banner */
+.swiper-slide-active .max-w-lg {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
