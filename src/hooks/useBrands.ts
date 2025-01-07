@@ -20,7 +20,10 @@ export function useBrands() {
     async function loadBrands() {
       try {
         const data = await fetchApi('/produto/marca');
-        setBrands(data);
+        const sortedBrands = data.sort((a: Brand, b: Brand) => 
+          a.Descricao.localeCompare(b.Descricao, 'pt-BR', { sensitivity: 'base' })
+        );
+        setBrands(sortedBrands);
       } catch (err) {
         setError('Erro ao carregar marcas');
         console.error('Erro ao carregar marcas:', err);
