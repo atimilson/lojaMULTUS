@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePromotions } from '@/hooks/usePromotions';
 import Image from "next/image";
 import {
   featuredProducts,
@@ -42,6 +43,7 @@ export default function Home() {
   const { fetchApi } = useApi();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { promotions, isLoading: isPromotionsLoading } = usePromotions();
 
   useEffect(() => {
     async function loadProducts() {
@@ -60,7 +62,7 @@ export default function Home() {
     }
   }, [isAuthLoading, authError]);
 
-  if (isAuthLoading || isLoading) {
+  if (isAuthLoading || isLoading || isPromotionsLoading) {
     return <div className="flex items-center justify-center min-h-screen">
       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
     </div>;
@@ -72,10 +74,10 @@ export default function Home() {
     </div>;
   }
 
-  // Filtra produtos em promoção
-  const promoProducts = products.filter(p => p.PrecoPromocional > 0);
+  // Usar diretamente as promoções convertidas
+  const promoProducts = promotions;
   
-  // Filtra produtos mais vendidos (você pode ajustar essa lógica conforme necessário)
+  // Filtra produtos mais vendidos
   const bestSellers = products.slice(0, 8);
 
   return (
@@ -351,63 +353,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Pagamentos e Certificados */}
-        <div className="border-t border-gray-800">
-          <div className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Formas de Pagamento */}
-              <div>
-                <h4 className="font-semibold mb-4">Formas de Pagamento</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Image src="/visa.png" alt="Visa" width={40} height={25} />
-                  <Image
-                    src="/mastercard.png"
-                    alt="Mastercard"
-                    width={40}
-                    height={25}
-                  />
-                  <Image src="/elo.png" alt="Elo" width={40} height={25} />
-                  <Image src="/pix.png" alt="Pix" width={40} height={25} />
-                  <Image
-                    src="/boleto.png"
-                    alt="Boleto"
-                    width={40}
-                    height={25}
-                  />
-                </div>
-              </div>
-
-              {/* Certificados de Segurança */}
-              <div>
-                <h4 className="font-semibold mb-4">Segurança</h4>
-                <div className="flex gap-4">
-                  <Image
-                    src="https://www.multuscomercial.com.br/img/footer/ssl.png"
-                    alt="SSL"
-                    width={100}
-                    height={30}
-                  />
-                  <Image
-                    src="https://www.multuscomercial.com.br/img/footer/google-security.png"
-                    alt="PCI"
-                    width={80}
-                    height={40}
-                  />
-                </div>
-              </div>
-
-              {/* Powered by */}
-              <div className="flex items-center justify-end">
-                <Image
-                  src="https://www.multuscomercial.com.br/storage/empresas/24753864000142/24753864000142.png"
-                  alt="Multus Comercial"
-                  width={120}
-                  height={35}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Copyright */}
         <div className="bg-gray-950">

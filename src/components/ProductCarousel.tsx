@@ -55,9 +55,9 @@ export function ProductCarousel({ title, products, viewAllLink }: ProductCarouse
                   <p className="text-xl font-bold text-primary">
                     R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
                   </p>
-                  <p className="text-xs text-gray-600">
+                  {/* <p className="text-xs text-gray-600">
                     Em até 10x de R$ {((product.PrecoPromocional || product.Preco) / 10).toFixed(2)}
-                  </p>
+                  </p> */}
                 </div>
               </div>
             </Link>

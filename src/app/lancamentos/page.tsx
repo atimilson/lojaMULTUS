@@ -1,3 +1,7 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { useNewProducts } from '@/hooks/useNewProducts';
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/Header";
@@ -10,46 +14,112 @@ import {
   StarIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import { Metadata } from 'next';
 
-// Metadata
-export const metadata: Metadata = {
-  title: 'Lançamentos | Multus Comercial',
-  description: 'Confira os novos produtos da Multus Comercial'
-};
-
-// Mock de produtos lançamentos
-const newProducts = [
-  {
-    id: 1,
-    name: "Serra Circular de Bancada 10\" 2000W",
-    brand: "DEWALT",
-    price: 3599.90,
-    image: "https://images.tcdn.com.br/img/img_prod/1066586/serra_circular_bancada_10_2000w_dwe7470_dewalt_8909_1_20201214152616.jpg",
-    rating: 5,
-    reviews: 12,
-    isNew: true,
-    releaseDate: "2024-03-01",
-    category: "Ferramentas Elétricas",
-    features: ["Motor 2000W", "Precisão profissional", "Sistema de segurança"]
-  },
-  {
-    id: 2,
-    name: "Kit Ferramentas a Bateria 18V",
-    brand: "BOSCH",
-    price: 2899.90,
-    image: "https://images.tcdn.com.br/img/img_prod/1066586/kit_ferramentas_bateria_18v_bosch_8901_1_20201214152616.jpg",
-    rating: 4,
-    reviews: 8,
-    isNew: true,
-    releaseDate: "2024-02-15",
-    category: "Kits Profissionais",
-    features: ["Bateria 18V", "5 ferramentas", "Maleta premium"]
-  },
-  // Adicione mais produtos aqui
-];
+function formatDate(dateStr: string): string {
+  try {
+    const [datePart] = dateStr.split(' ');
+    return datePart;
+  } catch (err) {
+    console.error('Erro ao formatar data:', dateStr);
+    return dateStr;
+  }
+}
 
 export default function LancamentosPage() {
+  const { products, isLoading, error } = useNewProducts();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState<number>(30);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortOrder, setSortOrder] = useState<string>('mais_recentes');
+
+  // Extrair categorias únicas e remover undefined
+  const categories = useMemo(() => {
+    if (!products.length) return [];
+    return Array.from(new Set(
+      products
+        .map(p => p.DescCategoria)
+        .filter((category): category is string => Boolean(category))
+    ));
+  }, [products]);
+
+  // Filtrar e ordenar produtos
+  const filteredProducts = useMemo(() => {
+    const dateLimit = new Date();
+    dateLimit.setDate(dateLimit.getDate() - dateFilter);
+
+    let filtered = products.filter(product => {
+      const alteracaoDate = new Date(product.Alteracao);
+      return alteracaoDate >= dateLimit;
+    });
+
+    // Aplicar filtros de categoria
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(p => 
+        p.DescCategoria && selectedCategories.includes(p.DescCategoria)
+      );
+    }
+
+    // Ordenação
+    switch (sortOrder) {
+      case 'mais_recentes':
+        filtered.sort((a, b) => 
+          new Date(b.Alteracao).getTime() - new Date(a.Alteracao).getTime()
+        );
+        break;
+      case 'menor_preco':
+        filtered.sort((a, b) => (a.Preco || 0) - (b.Preco || 0));
+        break;
+      case 'maior_preco':
+        filtered.sort((a, b) => (b.Preco || 0) - (a.Preco || 0));
+        break;
+    }
+
+    return filtered;
+  }, [products, selectedCategories, dateFilter, sortOrder]);
+
+  // Renderizar categorias
+  const renderCategories = () => {
+    return categories.map((category) => (
+      <label key={category} className="flex items-center gap-2 text-black">
+        <input
+          type="checkbox"
+          checked={selectedCategories.includes(category)}
+          onChange={() => {
+            setSelectedCategories(prev =>
+              prev.includes(category)
+                ? prev.filter(c => c !== category)
+                : [...prev, category]
+            );
+          }}
+          className="rounded text-primary focus:ring-primary"
+        />
+        <span className="text-sm">{category}</span>
+      </label>
+    ));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-red-500">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -63,7 +133,7 @@ export default function LancamentosPage() {
               <h1 className="text-3xl font-bold">Lançamentos</h1>
             </div>
             <p className="mt-2 text-gray-100">
-              Descubra as novidades em ferramentas e equipamentos profissionais
+              Descubra as novidades 
             </p>
           </div>
         </div>
@@ -79,38 +149,32 @@ export default function LancamentosPage() {
                 <div className="mb-6">
                   <h4 className="font-medium mb-2 text-gray-700">Data de Lançamento</h4>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2">
-                      <input type="radio" name="release" className="text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700">Últimos 30 dias</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="radio" name="release" className="text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700">Últimos 60 dias</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="radio" name="release" className="text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700">Últimos 90 dias</span>
-                    </label>
+                    {[30, 60, 90, 360].map((days) => (
+                      <label key={days} className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="release"
+                          checked={dateFilter === days}
+                          onChange={() => setDateFilter(days)}
+                          className="text-primary focus:ring-primary"
+                        />
+                        <span className="text-sm text-gray-700">
+                          Últimos {days} dias
+                        </span>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
                 {/* Categorias */}
                 <div className="mb-6">
-                  <h4 className="font-medium mb-2">Categorias</h4>
+                  <h4 className="font-medium mb-2 text-gray-700">Categorias</h4>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded text-primary focus:ring-primary" />
-                      <span className="text-sm text-gray-700">Ferramentas Elétricas</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded text-primary focus:ring-primary" />
-                      <span className="text-sm  text-gray-700">Kits Profissionais</span>
-                    </label>
-                    {/* Adicione mais categorias */}
+                    {renderCategories()}
                   </div>
                 </div>
 
-                {/* Marcas */}
+                {/*
                 <div className="mb-6">
                   <h4 className="font-medium mb-2 text-gray-700">Marcas</h4>
                   <div className="space-y-2">
@@ -122,9 +186,9 @@ export default function LancamentosPage() {
                       <input type="checkbox" className="rounded text-primary focus:ring-primary" />
                       <span className="text-sm text-gray-700">BOSCH</span>
                     </label>
-                    {/* Adicione mais marcas */}
+                   
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -140,7 +204,7 @@ export default function LancamentosPage() {
                     <ListBulletIcon className="w-5 h-5" />
                   </button>
                   <span className="text-sm text-gray-500">
-                    Mostrando {newProducts.length} produtos
+                    Mostrando {filteredProducts.length} produtos
                   </span>
                 </div>
                 <select className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary text-gray-700">
@@ -152,68 +216,51 @@ export default function LancamentosPage() {
               </div>
 
               {/* Grid de Produtos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {newProducts.map((product) => (
+              <div className={
+                viewMode === 'grid'
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  : "space-y-4"
+              }>
+                {filteredProducts.map((product) => (
                   <Link
-                    key={product.id}
-                    href={`/produto/${product.id}`}
+                    key={product.Produto}
+                    href={`/produto/${product.Produto}`}
                     className="bg-white rounded-lg shadow hover:shadow-md transition-shadow"
                   >
-                    <div className="relative p-4">
-                      {/* Badge de Lançamento */}
-                      <span className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded-full">
-                        NOVO
-                      </span>
-                      
-                      <div className="relative h-48 mb-4">
+                    <div className={`p-4 ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                      <div className={`
+                        relative aspect-square mb-4
+                        ${viewMode === 'list' ? 'w-48 mb-0' : ''}
+                      `}>
                         <Image
-                          src={product.image}
-                          alt={product.name}
+                          src={product.Imagens[0]?.URL || '/placeholder.jpg'}
+                          alt={product.Descricao}
                           fill
                           className="object-contain"
                         />
                       </div>
                       
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">{product.brand}</p>
+                      <div className={viewMode === 'list' ? 'flex-1' : ''}>
+                        <p className="text-sm text-gray-600 mb-1">{product.Marca}</p>
                         <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                          {product.name}
+                          {product.Descricao}
                         </h3>
                         
-                        {/* Features do produto */}
-                        <ul className="text-xs text-gray-500 mb-4 space-y-1">
-                          {product.features.map((feature, index) => (
-                            <li key={index} className="flex items-center gap-1">
-                              <span className="w-1 h-1 bg-primary rounded-full"></span>
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-
-                        <div className="flex items-center gap-1 mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <StarIcon
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < product.rating
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                          <span className="text-xs text-gray-600">
-                            ({product.reviews})
-                          </span>
-                        </div>
-
                         <div className="space-y-1">
                           <p className="text-xl font-bold text-primary">
-                            R$ {product.price.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Em até 10x de R$ {(product.price / 10).toFixed(2)}
+                            R$ {(product.Preco || 0).toFixed(2)}
                           </p>
                         </div>
+
+                        {viewMode === 'list' && product.DescEcommerce && (
+                          <p className="mt-4 text-sm text-gray-600 line-clamp-3">
+                            {product.DescEcommerce}
+                          </p>
+                        )}
+
+                        <p className="mt-2 text-xs text-gray-500">
+                          Lançado em: {formatDate(product.Alteracao)}
+                        </p>
                       </div>
                     </div>
                   </Link>

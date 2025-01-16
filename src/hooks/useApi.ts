@@ -14,7 +14,7 @@ export function useApi() {
       ...options.headers,
     };
 
-    const response = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api${endpoint}`, {
+    const response = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api/${endpoint}`, {
       ...options,
       headers,
     });

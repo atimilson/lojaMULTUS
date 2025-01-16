@@ -19,7 +19,7 @@ export function useBrands() {
   useEffect(() => {
     async function loadBrands() {
       try {
-        const data = await fetchApi('/produto/marca');
+        const data = await fetchApi('ecommerce/produto/marca');
         const sortedBrands = data.sort((a: Brand, b: Brand) => 
           a.Descricao.localeCompare(b.Descricao, 'pt-BR', { sensitivity: 'base' })
         );
