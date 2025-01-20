@@ -50,7 +50,7 @@ export default function Home() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchApi('/produto/ecommerce');
+        const data = await fetchApi('/produto/ecommerce?empresa=0&destaque=S');
         setProducts(data);
       } catch (error) {
         console.error('Erro ao carregar produtos:', error);
