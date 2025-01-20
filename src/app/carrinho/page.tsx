@@ -1,3 +1,9 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 import Image from "next/image";
 import Link from "next/link";
 import { featuredProducts } from "@/mocks/products";
@@ -13,6 +19,20 @@ import {
 import { Header } from "@/components/Header";
 
 export default function CartPage() {
+  const { isAuthenticated } = useAuth();
+  const { items, removeItem, updateQuantity, total } = useCart();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/minha-conta?returnTo=/carrinho');
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null; // ou um componente de loading
+  }
+
   return (
     <div className="flex-1 bg-gray-50">
         <Header />
@@ -33,16 +53,18 @@ export default function CartPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Lista de Produtos */}
           <div className="flex-1 space-y-4">
-            <h1 className="text-2xl font-bold text-gray-900">Meu Carrinho (3 itens)</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Meu Carrinho ({items.length} {items.length === 1 ? 'item' : 'itens'})
+            </h1>
 
             {/* Produtos */}
             <div className="bg-white rounded-lg shadow-sm">
-              {featuredProducts.slice(0, 3).map((product) => (
-                <div key={product.id} className="p-6 flex gap-6 border-b border-gray-100 last:border-0">
+              {items.map((item) => (
+                <div key={item.Produto} className="p-6 flex gap-6 border-b border-gray-100 last:border-0">
                   <div className="relative w-24 h-24">
                     <Image
-                      src={product.image}
-                      alt={product.name}
+                      src={item.Imagens[0]?.URL}
+                      alt={item.Descricao}
                       fill
                       className="object-contain"
                     />
@@ -50,10 +72,13 @@ export default function CartPage() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between gap-4">
-                      <Link href={`/produto/${product.id}`} className="text-gray-900 font-medium hover:text-primary line-clamp-2">
-                        {product.name}
+                      <Link href={`/produto/${item.Produto}`} className="text-gray-900 font-medium hover:text-primary line-clamp-2">
+                        {item.Descricao}
                       </Link>
-                      <button className="text-gray-400 hover:text-red-500">
+                      <button 
+                        onClick={() => removeItem(item.Produto)}
+                        className="text-gray-400 hover:text-red-500"
+                      >
                         <TrashIcon className="w-5 h-5" />
                       </button>
                     </div>
@@ -64,26 +89,33 @@ export default function CartPage() {
 
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <button className="p-1 rounded-full hover:bg-gray-100">
+                        <button 
+                          onClick={() => updateQuantity(item.Produto, item.Quantidade - 1)}
+                          className="p-1 rounded-full hover:bg-gray-100"
+                        >
                           <MinusIcon className="w-4 h-4 text-gray-600" />
                         </button>
                         <input
                           type="number"
-                          value="1"
+                          value={item.Quantidade}
+                          onChange={(e) => updateQuantity(item.Produto, parseInt(e.target.value))}
                           className="w-12 text-center border border-gray-300 rounded-md"
                         />
-                        <button className="p-1 rounded-full hover:bg-gray-100">
+                        <button 
+                          onClick={() => updateQuantity(item.Produto, item.Quantidade + 1)}
+                          className="p-1 rounded-full hover:bg-gray-100"
+                        >
                           <PlusIcon className="w-4 h-4 text-gray-600" />
                         </button>
                       </div>
                       <div className="text-right">
-                        {product.oldPrice && (
+                        {item.PrecoPromocional > 0 && (
                           <p className="text-sm text-gray-500 line-through">
-                            R$ {product.oldPrice.toFixed(2)}
+                            R$ {item.Preco.toFixed(2)}
                           </p>
                         )}
                         <p className="text-lg font-bold text-primary">
-                          R$ {product.price.toFixed(2)}
+                          R$ {((item.PrecoPromocional || item.Preco) * item.Quantidade).toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -140,8 +172,8 @@ export default function CartPage() {
               
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal (3 itens)</span>
-                  <span className="text-gray-900">R$ 1.499,97</span>
+                  <span className="text-gray-600">Subtotal ({items.length} itens)</span>
+                  <span className="text-gray-900">R$ {total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Frete</span>
@@ -155,7 +187,7 @@ export default function CartPage() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-900">Total</span>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">R$ 1.499,97</p>
+                      <p className="text-2xl font-bold text-primary">R$ {total.toFixed(2)}</p>
                       <p className="text-sm text-gray-600">em até 10x de R$ 149,99</p>
                     </div>
                   </div>

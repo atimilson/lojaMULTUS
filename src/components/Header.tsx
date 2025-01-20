@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useBrands } from "@/hooks/useBrands";
+import { useSearch } from "@/hooks/useSearch";
 import { 
   MagnifyingGlassIcon, 
   UserIcon, 
@@ -13,12 +14,20 @@ import {
   BuildingStorefrontIcon,
   ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline'
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from 'next/navigation';
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function Header() {
+  const router = useRouter();
   const { brands, isLoading: isBrandsLoading } = useBrands();
   const [searchBrand, setSearchBrand] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { searchResults, isLoading: isSearchLoading, searchProducts } = useSearch();
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const filteredBrands = brands.filter(brand => 
     brand.Descricao.toLowerCase().includes(searchBrand.toLowerCase())
@@ -33,6 +42,35 @@ export function Header() {
     acc[firstLetter].push(brand);
     return acc;
   }, {} as Record<string, typeof brands>);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      searchProducts(debouncedSearch);
+      setIsSearchOpen(true);
+    } else {
+      setIsSearchOpen(false);
+    }
+  }, [debouncedSearch, searchProducts]);
+
+  // Fechar resultados ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/busca?q=${encodeURIComponent(searchQuery)}`);
+      setIsSearchOpen(false);
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50">
@@ -65,28 +103,63 @@ export function Header() {
               />
             </Link>
 
-            {/* Barra de busca com categorias */}
-            <div className="flex-1 max-w-3xl">
-              <div className="flex">
-                <div className="relative">
-                  <select className="h-full py-2 px-4 bg-gray-50 border-y border-l border-gray-300 rounded-l-full text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">Todas as Categorias</option>
-                    <option value="ferramentas">Ferramentas</option>
-                    <option value="eletricos">Materiais Elétricos</option>
-                    <option value="hidraulica">Hidráulica</option>
-                  </select>
+            {/* Barra de busca com dropdown de resultados */}
+            <div className="flex-1 max-w-3xl relative" ref={searchRef}>
+              <form onSubmit={handleSearch}>
+                <div className="flex">
+                  <div className="flex-1 relative">
+                    <input 
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="O que você procura?"
+                      className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary text-gray-800 placeholder-gray-500"
+                    />
+                    {isSearchLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    type="submit"
+                    className="px-6 bg-primary hover:bg-primary-dark text-white rounded-r-full transition-colors"
+                  >
+                    <MagnifyingGlassIcon className="w-5 h-5" />
+                  </button>
                 </div>
-                <div className="flex-1 relative">
-                  <input 
-                    type="search"
-                    placeholder="O que você procura?"
-                    className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary text-gray-800 placeholder-gray-500"
-                  />
+              </form>
+
+              {/* Dropdown de resultados */}
+              {isSearchOpen && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-[70vh] overflow-y-auto">
+                  {searchResults.map((product) => (
+                    <Link
+                      key={product.Produto}
+                      href={`/produto/${product.Produto}`}
+                      className="flex items-center gap-4 p-4 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                      onClick={() => setIsSearchOpen(false)}
+                    >
+                      <div className="relative w-16 h-16">
+                        <Image
+                          src={product.Imagens[0]?.URL || '/placeholder.jpg'}
+                          alt={product.Descricao}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {product.Descricao}
+                        </h4>
+                        <p className="text-sm font-bold text-primary mt-1">
+                          R$ {product.Preco.toFixed(2)}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-                <button className="px-6 bg-primary hover:bg-primary-dark text-white rounded-r-full transition-colors">
-                  <MagnifyingGlassIcon className="w-5 h-5" />
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Ações do usuário */}

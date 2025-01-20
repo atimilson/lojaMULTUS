@@ -37,6 +37,7 @@ import {
 } from "react-icons/fa";
 import { Header } from "@/components/Header";
 import { Product } from "@/types/product";
+import { useSocialMedia } from '@/hooks/useSocialMedia';
 
 export default function Home() {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
@@ -44,6 +45,7 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { promotions, isLoading: isPromotionsLoading } = usePromotions();
+  const { getSocialMediaUrl, isLoading: isSocialLoading } = useSocialMedia();
 
   useEffect(() => {
     async function loadProducts() {
@@ -62,7 +64,7 @@ export default function Home() {
     }
   }, [isAuthLoading, authError]);
 
-  if (isAuthLoading || isLoading || isPromotionsLoading) {
+  if (isAuthLoading || isLoading || isPromotionsLoading || isSocialLoading) {
     return <div className="flex items-center justify-center min-h-screen">
       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
     </div>;
@@ -94,9 +96,9 @@ export default function Home() {
         />
 
         <ProductCarousel
-          title="Mais Vendidos"
+          title="Destaques"
           products={bestSellers}
-          viewAllLink="/mais-vendidos"
+          viewAllLink="/produtos"
         />
       </main>
 
@@ -307,41 +309,59 @@ export default function Home() {
                   <p className="text-white">Seg a Sex - 8h às 18h</p>
                 </li>
                 <li>
-                  <p className="text-gray-400">Telefone:</p>
-                  <p className="text-white">(11) 4444-5555</p>
+                  <p className="text-gray-400">WhatsApp:</p>
+                  <p className="text-white">{getSocialMediaUrl('WHATSAAP')}</p>
                 </li>
                 <li>
                   <p className="text-gray-400">E-mail:</p>
-                  <p className="text-white">contato@multus.com.br</p>
+                  <p className="text-white">{getSocialMediaUrl('EMAIL')}</p>
                 </li>
                 <li>
                   <div className="flex gap-4">
+                    {getSocialMediaUrl('FACEBOOK') && (
+                      <a
+                        href={getSocialMediaUrl('FACEBOOK')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <FaFacebook className="w-6 h-6" />
+                      </a>
+                    )}
+                    {getSocialMediaUrl('INSTAGRAM') && (
+                      <a
+                        href={getSocialMediaUrl('INSTAGRAM')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <FaInstagram className="w-6 h-6" />
+                      </a>
+                    )}
+                    {getSocialMediaUrl('YOUTUBE') && (
+                      <a
+                        href={getSocialMediaUrl('YOUTUBE')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <FaYoutube className="w-6 h-6" />
+                      </a>
+                    )}
+                    {getSocialMediaUrl('LINKEDIN') && (
+                      <a
+                        href={getSocialMediaUrl('LINKEDIN')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <FaLinkedin className="w-6 h-6" />
+                      </a>
+                    )}
                     <a
-                      href="https://facebook.com"
-                      className="text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <FaFacebook className="w-6 h-6" />
-                    </a>
-                    <a
-                      href="https://instagram.com"
-                      className="text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <FaInstagram className="w-6 h-6" />
-                    </a>
-                    <a
-                      href="https://youtube.com"
-                      className="text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <FaYoutube className="w-6 h-6" />
-                    </a>
-                    <a
-                      href="https://linkedin.com"
-                      className="text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <FaLinkedin className="w-6 h-6" />
-                    </a>
-                    <a
-                      href="https://whatsapp.com"
+                      href={`https://wa.me/${getSocialMediaUrl('WHATSAAP').replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-gray-400 hover:text-primary transition-colors"
                     >
                       <FaWhatsapp className="w-6 h-6" />

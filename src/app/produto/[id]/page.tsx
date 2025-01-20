@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Header } from "@/components/Header";
 import { ShippingCalculator } from '@/components/ShippingCalculator';
+import { useCart } from '@/contexts/CartContext';
 
 export default function ProductDetails({ params }: { params: { id: string } }) {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
@@ -24,6 +25,7 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
 
   useEffect(() => {
     async function loadProduct() {
@@ -56,6 +58,12 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
   if (!product) {
     return <div>Produto não encontrado</div>;
   }
+
+  const handleAddToCart = () => {
+    addItem(product, quantity);
+    // Opcional: Mostrar uma mensagem de sucesso
+    alert('Produto adicionado ao carrinho!');
+  };
 
   return (
     <main className="flex-1 bg-gray-50">
@@ -123,12 +131,12 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
                 <p className="text-3xl font-bold text-primary">
                   R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                {/* <p className="text-sm text-gray-600 mt-1">
                   Em até 10x de R$ {((product.PrecoPromocional || product.Preco) / 10).toFixed(2)} sem juros
                 </p>
                 <p className="text-sm text-primary font-medium mt-2">
                   À vista R$ {((product.PrecoPromocional || product.Preco) * 0.9).toFixed(2)} (10% de desconto)
-                </p>
+                </p> */}
               </div>
 
               {/* Calculadora de Frete */}
@@ -161,7 +169,10 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
                 </div>
 
                 <div className="flex gap-4">
-                  <button className="flex-1 bg-primary hover:bg-primary-dark text-white py-4 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+                  <button 
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-primary hover:bg-primary-dark text-white py-4 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                  >
                     <ShoppingCartIcon className="w-5 h-5" />
                     Adicionar ao Carrinho
                   </button>
