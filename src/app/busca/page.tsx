@@ -5,22 +5,34 @@ import { useSearchParams } from 'next/navigation';
 import { Header } from "@/components/Header";
 import { Product } from "@/types/product";
 import { useApi } from '@/hooks/useApi';
+import { useCart } from '@/contexts/CartContext';
 import Image from "next/image";
 import Link from "next/link";
 import { 
   ListBulletIcon,
   Squares2X2Icon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 
 export default function BuscaPage() {
   const searchParams = useSearchParams();
-  const query = searchParams.get('q');
+  const query = searchParams?.get('q') || '';
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { fetchApi } = useApi();
+  const { addItem } = useCart();
+
+  const handleAddToCart = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    product: Product
+  ) => {
+    e.preventDefault(); // Previne a navegação para a página do produto
+    addItem(product, 1);
+    alert('Produto adicionado ao carrinho!');
+  };
 
   useEffect(() => {
     async function searchProducts() {
@@ -111,48 +123,60 @@ export default function BuscaPage() {
                 : "space-y-4"
             }>
               {products.map((product) => (
-                <Link
+                <div
                   key={product.Produto}
-                  href={`/produto/${product.Produto}`}
                   className="bg-white rounded-lg shadow hover:shadow-md transition-shadow"
                 >
                   <div className={`p-4 ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                    <div className={`
-                      relative aspect-square mb-4
-                      ${viewMode === 'list' ? 'w-48 mb-0' : ''}
-                    `}>
-                      <Image
-                        src={product.Imagens[0]?.URL || '/placeholder.jpg'}
-                        alt={product.Descricao}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
+                    <Link href={`/produto/${product.Produto}`}>
+                      <div className={`
+                        relative aspect-square mb-4
+                        ${viewMode === 'list' ? 'w-48 mb-0' : ''}
+                      `}>
+                        <Image
+                          src={product.Imagens[0]?.URL || '/placeholder.jpg'}
+                          alt={product.Descricao}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    </Link>
                     
                     <div className={viewMode === 'list' ? 'flex-1' : ''}>
-                      <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                        {product.Descricao}
-                      </h3>
-                      
-                      <div className="space-y-1">
-                        {product.PrecoPromocional > 0 && (
-                          <p className="text-sm text-gray-500 line-through">
-                            R$ {product.Preco.toFixed(2)}
+                      <Link href={`/produto/${product.Produto}`}>
+                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
+                          {product.Descricao}
+                        </h3>
+                        
+                        <div className="space-y-1">
+                          {product.PrecoPromocional > 0 && (
+                            <p className="text-sm text-gray-500 line-through">
+                              R$ {product.Preco.toFixed(2)}
+                            </p>
+                          )}
+                          <p className="text-xl font-bold text-primary">
+                            R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
+                          </p>
+                        </div>
+
+                        {viewMode === 'list' && product.DescEcommerce && (
+                          <p className="mt-4 text-sm text-gray-600 line-clamp-3">
+                            {product.DescEcommerce}
                           </p>
                         )}
-                        <p className="text-xl font-bold text-primary">
-                          R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
-                        </p>
-                      </div>
+                      </Link>
 
-                      {viewMode === 'list' && product.DescEcommerce && (
-                        <p className="mt-4 text-sm text-gray-600 line-clamp-3">
-                          {product.DescEcommerce}
-                        </p>
-                      )}
+                      {/* Botão Adicionar ao Carrinho */}
+                      <button
+                        onClick={(e) => handleAddToCart(e, product)}
+                        className="w-full mt-4 py-2 px-4 bg-primary text-white rounded-lg flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors"
+                      >
+                        <ShoppingCartIcon className="w-5 h-5" />
+                        Adicionar ao Carrinho
+                      </button>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
