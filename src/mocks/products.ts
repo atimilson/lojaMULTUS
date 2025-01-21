@@ -175,7 +175,7 @@ export const banners = [
     title: "Ferramentas Profissionais",
     subtitle: "As melhores marcas com os melhores preços",
     buttonText: "Ver Ofertas",
-    image: "https://www.multuscomercial.com.br/storage/empresas/24753864000142/slidesQiLh5k38gDinMDTmo42RYiJkmqEhPM-metaW01VTFRVU10gMDJfMTIgU0xJREUgU0hPVyAoMikucG5n-.jpeg"
+    image: "https://www.multuscomercial.com.br/storage/empresas/24753864000142/slides4Y7JtM4jV5ANR00GL8BQzVDaXVRgoU-metaW01VTFRVU11fMDFfMDFfU0xJREVIU09XLnBuZw==-.jpeg"
   },
   {
     id: 2,
