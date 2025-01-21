@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import { useRegister } from '@/hooks/useRegister';
 import { useLogin } from '@/hooks/useLogin';
 import { 
@@ -13,9 +14,12 @@ import {
   CalendarIcon,
   EyeIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
+  const router = useRouter();
   const { register, isLoading, error } = useRegister();
+  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     Nome: '',
     Email: '',
@@ -43,7 +47,6 @@ export default function LoginPage() {
       alert('Você precisa aceitar os termos de uso e política de privacidade');
       return;
     }
-    console.log(formData)
 
     const success = await register({
       Nome: formData.Nome,
@@ -69,6 +72,12 @@ export default function LoginPage() {
       });
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/minha-conta/usuario');
+    }
+  }, [isAuthenticated, router]);
 
   // Login
   const { login, isLoading: isLoginLoading, error: loginError } = useLogin();
