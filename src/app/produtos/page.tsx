@@ -8,11 +8,14 @@ import {
   Squares2X2Icon,
   FunnelIcon,
   CubeIcon,
+  ShoppingCartIcon,
 } from '@heroicons/react/24/outline';
 import { useState, useMemo, useEffect } from 'react';
 import { Product } from "@/types/product";
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from "@/contexts/CartContext";
+import toast from "react-hot-toast";
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,8 +23,9 @@ export default function ProdutosPage() {
   const [error, setError] = useState<string | null>(null);
   const { fetchApi } = useApi();
   const { token } = useAuth();
+  const { addItem } = useCart();
   
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortOrder, setSortOrder] = useState<string>('menor_preco');
@@ -49,25 +53,50 @@ export default function ProdutosPage() {
     loadProducts();
   }, [token]);
 
-  // Extrair categorias únicas
-  const categories = useMemo(() => {
-    if (!products.length) return [];
-    const categorySet = new Set(
-      products
-        .map(p => p.DescCategoria)
-        .filter((category): category is string => !!category)
+  const handleAddToCart = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    product: Product
+  ) => {
+    e.preventDefault();
+    addItem(product, 1);
+    toast.success(
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 relative w-12 h-12">
+          <Image
+            src={product.Imagens[0]?.URL || '/placeholder.jpg'}
+            alt={product.Descricao}
+            fill
+            className="object-contain"
+          />
+        </div>
+        <div>
+          <p className="font-medium">Produto adicionado ao carrinho!</p>
+          <p className="text-sm text-gray-500 line-clamp-1">{product.Descricao}</p>
+          <p className="text-sm text-gray-500">Quantidade: {1}</p>
+        </div>
+      </div>
     );
-    return Array.from(categorySet);
+  };
+
+  // Extrair marcas únicas
+  const brands = useMemo(() => {
+    if (!products.length) return [];
+    const brandSet = new Set(
+      products
+        .map(p => p.Marca)
+        .filter((brand): brand is string => !!brand)
+    );
+    return Array.from(brandSet);
   }, [products]);
 
   // Filtrar e ordenar produtos
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
 
-    // Aplicar filtros de categoria
-    if (selectedCategories.length > 0) {
+    // Aplicar filtros de marca
+    if (selectedBrands.length > 0) {
       filtered = filtered.filter(p => 
-        p.DescCategoria && selectedCategories.includes(p.DescCategoria)
+        p.Marca && selectedBrands.includes(p.Marca)
       );
     }
 
@@ -91,7 +120,7 @@ export default function ProdutosPage() {
     }
 
     return filtered;
-  }, [products, selectedCategories, priceRange, sortOrder]);
+  }, [products, selectedBrands, priceRange, sortOrder]);
 
   if (error) {
     return (
@@ -142,25 +171,25 @@ export default function ProdutosPage() {
                   </h3>
                 </div>
 
-                {/* Categorias */}
+                {/* Marcas */}
                 <div className="mb-6">
-                  <h4 className="font-medium mb-2 text-black">Categorias</h4>
+                  <h4 className="font-medium mb-2 text-black">Marcas</h4>
                   <div className="space-y-2">
-                    {categories.map((category) => (
-                      <label key={category} className="flex items-center gap-2 text-black">
+                    {brands.map((brand) => (
+                      <label key={brand} className="flex items-center gap-2 text-black">
                         <input
                           type="checkbox"
-                          checked={selectedCategories.includes(category)}
+                          checked={selectedBrands.includes(brand)}
                           onChange={() => {
-                            setSelectedCategories(prev =>
-                              prev.includes(category)
-                                ? prev.filter(c => c !== category)
-                                : [...prev, category]
+                            setSelectedBrands(prev =>
+                              prev.includes(brand)
+                                ? prev.filter(b => b !== brand)
+                                : [...prev, brand]
                             );
                           }}
                           className="rounded text-primary focus:ring-primary"
                         />
-                        <span className="text-sm">{category}</span>
+                        <span className="text-sm">{brand}</span>
                       </label>
                     ))}
                   </div>
@@ -242,6 +271,17 @@ export default function ProdutosPage() {
                         )}
                       </div>
                     </div>
+                    {/* Botão Adicionar ao Carrinho */}
+                    <button
+                        onClick={(e) => handleAddToCart(e, product)}
+                        className={`w-full mt-4 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors
+                        ${product.PrecoPromocional > 0 
+                            ? 'bg-red-600 hover:bg-red-700 text-white' 
+                            : 'bg-primary hover:bg-primary-dark text-white'}`}
+                    >
+                        <ShoppingCartIcon className="w-5 h-5" />
+                        Adicionar ao Carrinho
+                    </button>
                   </Link>
                 ))}
               </div>
@@ -251,7 +291,7 @@ export default function ProdutosPage() {
                   <p className="text-gray-500">Nenhum produto encontrado com os filtros selecionados</p>
                   <button
                     onClick={() => {
-                      setSelectedCategories([]);
+                      setSelectedBrands([]);
                       setPriceRange([0, 5000]);
                     }}
                     className="mt-4 text-primary hover:text-primary-dark font-medium"

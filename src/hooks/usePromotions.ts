@@ -14,6 +14,7 @@ export interface Promotion {
   PrecoPromocional: number;
   Descricao: string;
   DescCategoria: string;
+  Marca:string;
   Complemento: string;
   Observacao: string;
   Imagens: PromotionImage[];
@@ -29,7 +30,7 @@ function promotionToProduct(promotion: Promotion): Product {
     Estoque: 0,
     Categoria: promotion.DescCategoria || '',
     DescCategoria: promotion.DescCategoria || '',
-    Marca: '',
+    Marca: promotion.Marca,
     DescEcommerce: promotion.Complemento || '',
     Observacao: promotion.Observacao || '',
     Imagens: promotion.Imagens || [],
@@ -72,7 +73,7 @@ export function usePromotions() {
         }
 
         const data = await response.json();
-        
+        console.log(data)
         if (!data || !Array.isArray(data)) {
           throw new Error('Formato de dados inválido');
         }

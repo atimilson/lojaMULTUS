@@ -17,10 +17,12 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { useDebounce } from "@/hooks/useDebounce";
+import { useCart } from "@/contexts/CartContext";
 
 export function Header() {
   const router = useRouter();
   const { brands, isLoading: isBrandsLoading } = useBrands();
+  const { itemsCount } = useCart();
   const [searchBrand, setSearchBrand] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +30,7 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { searchResults, isLoading: isSearchLoading, searchProducts } = useSearch();
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredBrands = brands.filter(brand => 
     brand.Descricao.toLowerCase().includes(searchBrand.toLowerCase())
@@ -63,6 +66,32 @@ export function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    // Fechar dropdown ao pressionar Esc
+    function handleEscKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isDropdownOpen]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -174,9 +203,11 @@ export function Header() {
               </Link>
               <Link href="/carrinho" className="flex flex-col items-center relative">
                 <ShoppingCartIcon className="w-6 h-6 text-gray-700" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  0
-                </span>
+                {itemsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {itemsCount}
+                  </span>
+                )}
                 <span className="text-xs text-gray-700">Carrinho</span>
               </Link>
             </div>
@@ -190,7 +221,7 @@ export function Header() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               {/* Menu de marcas com dropdown */}
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button 
                   className="flex items-center gap-2 py-4 hover:text-gray-200 transition-colors"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -203,49 +234,52 @@ export function Header() {
                 {/* Dropdown menu melhorado */}
                 {isDropdownOpen && (
                   <div 
-                    className="absolute top-full left-0 w-screen max-w-4xl bg-white shadow-lg rounded-b-lg"
+                    className="absolute top-full left-0 w-screen max-w-4xl bg-white shadow-lg rounded-b-lg flex flex-col"
                     style={{ maxHeight: 'calc(100vh - 200px)' }}
                   >
-                    {/* Barra de pesquisa */}
-                    <div className="sticky top-0 bg-white p-4 border-b">
+                    {/* Barra de pesquisa fixa no topo */}
+                    <div className="sticky top-0 bg-white p-4 border-b z-10">
                       <div className="relative">
                         <input
                           type="text"
                           placeholder="Buscar marca..."
                           value={searchBrand}
                           onChange={(e) => setSearchBrand(e.target.value)}
-                          className="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-black"
                         />
                         <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       </div>
                     </div>
 
-                    {isBrandsLoading ? (
-                      <div className="p-4 text-gray-500">Carregando...</div>
-                    ) : (
-                      <div className="grid grid-cols-3 gap-6 p-6 overflow-y-auto">
-                        {Object.entries(groupedBrands).map(([letter, letterBrands]) => (
-                          <div key={letter} className="space-y-2">
-                            <h3 className="font-bold text-primary text-lg">{letter}</h3>
-                            <div className="space-y-1">
-                              {letterBrands.map((brand) => (
-                                <Link
-                                  key={brand.Codigo}
-                                  href={`/marca/${encodeURIComponent(brand.Codigo)}`}
-                                  className="block px-2 py-1 rounded hover:bg-gray-50 text-gray-700 text-sm"
-                                  onClick={() => setIsDropdownOpen(false)}
-                                >
-                                  {brand.Descricao}
-                                </Link>
-                              ))}
+                    {/* Área de scroll */}
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      {isBrandsLoading ? (
+                        <div className="p-4 text-gray-500">Carregando...</div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-6 p-6">
+                          {Object.entries(groupedBrands).map(([letter, letterBrands]) => (
+                            <div key={letter} className="space-y-2">
+                              <h3 className="font-bold text-primary text-lg">{letter}</h3>
+                              <div className="space-y-1">
+                                {letterBrands.map((brand) => (
+                                  <Link
+                                    key={brand.Codigo}
+                                    href={`/marca/${encodeURIComponent(brand.Codigo)}`}
+                                    className="block px-2 py-1 rounded hover:bg-gray-50 text-gray-700 text-sm"
+                                    onClick={() => setIsDropdownOpen(false)}
+                                  >
+                                    {brand.Descricao}
+                                  </Link>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                    {/* Footer do dropdown */}
-                    <div className="sticky bottom-0 bg-gray-50 p-4 border-t text-center">
+                    {/* Footer do dropdown fixo na parte inferior */}
+                    <div className="sticky bottom-0 bg-gray-50 p-4 border-t text-center mt-auto">
                       <Link
                         href="/marcas"
                         className="text-primary hover:text-primary-dark font-medium"

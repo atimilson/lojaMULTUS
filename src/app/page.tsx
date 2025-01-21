@@ -98,12 +98,14 @@ export default function Home() {
           title="Ofertas Imperdíveis"
           products={promoProducts}
           viewAllLink="/promocoes"
+          isPromotion={true}
         />
 
         <ProductCarousel
           title="Destaques"
           products={bestSellers}
           viewAllLink="/produtos"
+          isPromotion={false}
         />
       </main>
 

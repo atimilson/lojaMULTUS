@@ -17,6 +17,7 @@ import {
 import { Header } from "@/components/Header";
 import { ShippingCalculator } from '@/components/ShippingCalculator';
 import { useCart } from '@/contexts/CartContext';
+import toast from 'react-hot-toast';
 
 export default function ProductDetails({ params }: { params: { id: string } }) {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
@@ -61,8 +62,23 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
 
   const handleAddToCart = () => {
     addItem(product, quantity);
-    // Opcional: Mostrar uma mensagem de sucesso
-    alert('Produto adicionado ao carrinho!');
+    toast.success(
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 relative w-12 h-12">
+          <Image
+            src={product.Imagens[0]?.URL || '/placeholder.jpg'}
+            alt={product.Descricao}
+            fill
+            className="object-contain"
+          />
+        </div>
+        <div>
+          <p className="font-medium">Produto adicionado ao carrinho!</p>
+          <p className="text-sm text-gray-500 line-clamp-1">{product.Descricao}</p>
+          <p className="text-sm text-gray-500">Quantidade: {quantity}</p>
+        </div>
+      </div>
+    );
   };
 
   return (
