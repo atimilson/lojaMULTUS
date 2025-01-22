@@ -1,50 +1,50 @@
-'use client';
+"use client";
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
-import { useRegister } from '@/hooks/useRegister';
-import { useLogin } from '@/hooks/useLogin';
-import { 
-  EnvelopeIcon, 
+import { useRouter } from "next/navigation";
+import { useRegister } from "@/hooks/useRegister";
+import { useLogin } from "@/hooks/useLogin";
+import {
+  EnvelopeIcon,
   LockClosedIcon,
   UserIcon,
   PhoneIcon,
   IdentificationIcon,
   CalendarIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
-import { useAuth } from '@/contexts/AuthContext';
+  EyeIcon,
+} from "@heroicons/react/24/outline";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const { register, isLoading, error } = useRegister();
   const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
-    Nome: '',
-    Email: '',
-    Senha: '',
-    CPFouCNPJ: '',
-    IE: '',
-    Fone: '',
-    DataNascimento: '',
-    termsAccepted: false
+    Nome: "",
+    Email: "",
+    Senha: "",
+    CPFouCNPJ: "",
+    IE: "",
+    Fone: "",
+    DataNascimento: "",
+    termsAccepted: false,
   });
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.termsAccepted) {
-      alert('Você precisa aceitar os termos de uso e política de privacidade');
+      alert("Você precisa aceitar os termos de uso e política de privacidade");
       return;
     }
 
@@ -55,52 +55,60 @@ export default function LoginPage() {
       CPFouCNPJ: formData.CPFouCNPJ,
       IE: formData.IE,
       Fone: formData.Fone,
-      DataNascimento: formData.DataNascimento
+      DataNascimento: formData.DataNascimento,
     });
 
     if (success) {
-      setSuccessMessage('Cadastro realizado com sucesso!');
+      setSuccessMessage("Cadastro realizado com sucesso!");
       setFormData({
-        Nome: '',
-        Email: '',
-        Senha: '',
-        CPFouCNPJ: '',
-        IE: '',
-        Fone: '',
-        DataNascimento: '',
-        termsAccepted: false
+        Nome: "",
+        Email: "",
+        Senha: "",
+        CPFouCNPJ: "",
+        IE: "",
+        Fone: "",
+        DataNascimento: "",
+        termsAccepted: false,
       });
     }
   };
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/minha-conta/usuario');
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo");
+
+      // Se existir, redireciona para a página solicitada, senão vai para a área do usuário
+      if (returnTo) {
+        router.push(returnTo);
+      } else {
+        router.push("/minha-conta/usuario");
+      }
     }
   }, [isAuthenticated, router]);
 
   // Login
   const { login, isLoading: isLoginLoading, error: loginError } = useLogin();
   const [loginData, setLoginData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false
+    email: "",
+    password: "",
+    rememberMe: false,
   });
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setLoginData(prev => ({
+    setLoginData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     await login({
       Usuario: loginData.email,
-      Senha: loginData.password
+      Senha: loginData.password,
     });
   };
 
@@ -111,7 +119,11 @@ export default function LoginPage() {
         <div className="container mx-auto px-4 py-3">
           <nav className="text-sm">
             <ol className="flex items-center gap-2">
-              <li><Link href="/" className="text-primary hover:text-primary-dark">Home</Link></li>
+              <li>
+                <Link href="/" className="text-primary hover:text-primary-dark">
+                  Home
+                </Link>
+              </li>
               <li className="text-gray-400">/</li>
               <li className="text-gray-900 font-medium">Minha Conta</li>
             </ol>
@@ -127,24 +139,42 @@ export default function LoginPage() {
               <div className="p-8 border-r border-gray-200">
                 <div className="max-w-md mx-auto space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Criar conta</h2>
-                    <p className="text-gray-600 mt-1">Preencha seus dados para se cadastrar</p>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Criar conta
+                    </h2>
+                    <p className="text-gray-600 mt-1">
+                      Preencha seus dados para se cadastrar
+                    </p>
                   </div>
 
                   {error && (
                     <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                         <span className="font-medium">Erro no cadastro:</span>
                       </div>
                       <p className="mt-1 ml-7">{error}</p>
-                      
-                      {error.includes('informe letra ou caractere especial') && (
+
+                      {error.includes(
+                        "informe letra ou caractere especial"
+                      ) && (
                         <ul className="mt-2 ml-7 text-sm list-disc list-inside text-red-500">
                           <li>A senha deve conter pelo menos uma letra</li>
-                          <li>A senha deve conter pelo menos um caractere especial (!@#$%^&*)</li>
+                          <li>
+                            A senha deve conter pelo menos um caractere especial
+                            (!@#$%^&*)
+                          </li>
                           <li>A senha deve ter no mínimo 8 caracteres</li>
                         </ul>
                       )}
@@ -153,8 +183,17 @@ export default function LoginPage() {
 
                   {successMessage && (
                     <div className="bg-green-50 border border-green-200 text-green-600 p-4 rounded-lg flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       <span>{successMessage}</span>
                     </div>
@@ -162,7 +201,10 @@ export default function LoginPage() {
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label htmlFor="Nome" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="Nome"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Nome completo
                       </label>
                       <div className="relative">
@@ -183,7 +225,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="CPFouCNPJ"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         CPF ou CNPJ
                       </label>
                       <div className="relative">
@@ -204,7 +249,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="IE" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="IE"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Inscrição Estadual
                       </label>
                       <div className="relative">
@@ -224,7 +272,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="DataNascimento" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="DataNascimento"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Data de Nascimento
                       </label>
                       <div className="relative">
@@ -244,7 +295,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="Email" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="Email"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         E-mail
                       </label>
                       <div className="relative">
@@ -265,7 +319,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="Fone" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="Fone"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Telefone
                       </label>
                       <div className="relative">
@@ -286,7 +343,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="Senha" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="Senha"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Senha
                       </label>
                       <div className="relative">
@@ -316,11 +376,17 @@ export default function LoginPage() {
                       />
                       <label className="ml-2 text-sm text-gray-600">
                         Li e aceito os{" "}
-                        <Link href="/termos" className="text-primary hover:text-primary-dark">
+                        <Link
+                          href="/termos"
+                          className="text-primary hover:text-primary-dark"
+                        >
                           termos de uso
                         </Link>{" "}
                         e{" "}
-                        <Link href="/privacidade" className="text-primary hover:text-primary-dark">
+                        <Link
+                          href="/privacidade"
+                          className="text-primary hover:text-primary-dark"
+                        >
                           política de privacidade
                         </Link>
                       </label>
@@ -331,7 +397,7 @@ export default function LoginPage() {
                       disabled={isLoading}
                       className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {isLoading ? 'Cadastrando...' : 'Criar conta'}
+                      {isLoading ? "Cadastrando..." : "Criar conta"}
                     </button>
                   </form>
                 </div>
@@ -341,8 +407,12 @@ export default function LoginPage() {
               <div className="p-8 bg-gray-50">
                 <div className="max-w-md mx-auto space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Já sou cliente</h2>
-                    <p className="text-gray-600 mt-1">Faça login para continuar</p>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Já sou cliente
+                    </h2>
+                    <p className="text-gray-600 mt-1">
+                      Faça login para continuar
+                    </p>
                   </div>
 
                   {loginError && (
@@ -353,7 +423,10 @@ export default function LoginPage() {
 
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         E-mail
                       </label>
                       <div className="relative">
@@ -374,7 +447,10 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Senha
                       </label>
                       <div className="relative">
@@ -403,9 +479,14 @@ export default function LoginPage() {
                           onChange={handleLoginChange}
                           className="rounded text-primary focus:ring-primary"
                         />
-                        <span className="ml-2 text-sm text-gray-600">Lembrar-me</span>
+                        <span className="ml-2 text-sm text-gray-600">
+                          Lembrar-me
+                        </span>
                       </label>
-                      <Link href="/esqueci-senha" className="text-sm text-primary hover:text-primary-dark">
+                      <Link
+                        href="/esqueci-senha"
+                        className="text-sm text-primary hover:text-primary-dark"
+                      >
                         Esqueci minha senha
                       </Link>
                     </div>
@@ -415,7 +496,7 @@ export default function LoginPage() {
                       disabled={isLoginLoading}
                       className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {isLoginLoading ? 'Entrando...' : 'Entrar'}
+                      {isLoginLoading ? "Entrando..." : "Entrar"}
                     </button>
                   </form>
                 </div>
@@ -426,4 +507,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} 
+}

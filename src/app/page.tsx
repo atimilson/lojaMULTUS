@@ -199,19 +199,7 @@ export default function Home() {
                     </a>
                   </li>
                 )}
-                {getSocialMediaUrl("WHATSAAP") && (
-                  <li>
-                    <a
-                      href={getSocialMediaUrl("WHATSAAP")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <FaWhatsapp className="w-6 h-6" />
-                      <span>WhatsApp</span>
-                    </a>
-                  </li>
-                )}
+                
               </ul>
             </div>
 
