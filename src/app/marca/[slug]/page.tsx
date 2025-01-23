@@ -14,14 +14,20 @@ import {
   FunnelIcon,
   XMarkIcon,
   StarIcon,
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  BuildingStorefrontIcon,
+  CubeIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "react-hot-toast";
 
 type SortOption = 'relevancia' | 'menor' | 'maior' | 'nome' | 'mais_vendidos';
 
 export default function BrandPage({ params }: { params: { slug: string } }) {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
   const { fetchApi } = useApi();
+  const { addItem } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,11 +42,11 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchApi(`/produto/ecommerce?empresa=0&marca=${params.slug}`);
+        const data = await fetchApi(`/produto/ecommerce?empresa=1&marca=${params.slug}`);
         setProducts(data);
         
         // Definir range de preços inicial
-        const prices = data.map((p: Product) => p.Preco);
+        const prices = data.map((p: Product) => p.PrecoPromocional>0?p.PrecoPromocional:p.Preco);
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
         setPriceRange([minPrice, maxPrice]);
@@ -107,6 +113,29 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
     setSelectedCategories([]);
     setCurrentPriceFilter(priceRange);
     setSortOrder('relevancia');
+  };
+
+  // Adicione a função de adicionar ao carrinho
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>, product: Product) => {
+    e.preventDefault();
+    addItem(product, 1);
+    toast.success(
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 relative w-12 h-12">
+          <Image
+            src={product.Imagens[0]?.URL || "/placeholder.jpg"}
+            alt={product.Descricao}
+            fill
+            className="object-contain"
+          />
+        </div>
+        <div>
+          <p className="font-medium">Produto adicionado ao carrinho!</p>
+          <p className="text-sm text-gray-500 line-clamp-1">{product.Descricao}</p>
+          <p className="text-sm text-gray-500">Quantidade: 1</p>
+        </div>
+      </div>
+    );
   };
 
   if (isLoading || isAuthLoading) {
@@ -260,62 +289,105 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
             {/* Grid/Lista de produtos */}
             <div className={
               viewMode === 'grid'
-                ? "grid grid-cols-1 md:grid-cols-3 gap-6"
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 : "space-y-4"
             }>
               {filteredAndSortedProducts.map((product) => (
-                <Link 
+                <div 
                   key={product.Produto}
-                  href={`/produto/${product.Produto}`}
                   className={`
-                    bg-white rounded-lg shadow hover:shadow-md transition-shadow
+                    bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300
                     ${viewMode === 'list' ? 'block' : ''}
                   `}
                 >
-                  <div className={`p-4 ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                  <Link
+                    href={`/produto/${product.Produto}`}
+                    className={`block ${viewMode === 'list' ? 'flex gap-6' : ''}`}
+                  >
                     <div className={`
-                      relative aspect-square mb-4
-                      ${viewMode === 'list' ? 'w-48 mb-0' : ''}
+                      relative group
+                      ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'aspect-square'}
                     `}>
                       <Image
-                        src={product.Imagens[0]?.URL || '/placeholder-product.jpg'}
+                        src={product.Imagens[0]?.URL || "/placeholder.jpg"}
                         alt={product.Descricao}
                         fill
-                        className="object-contain"
+                        className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                       />
+                      {product.PrecoPromocional > 0 && (
+                        <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          {Math.round(((product.Preco - product.PrecoPromocional) / product.Preco) * 100)}% OFF
+                        </span>
+                      )}
                     </div>
-                    <div className={viewMode === 'list' ? 'flex-1' : ''}>
-                      <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                        {product.Descricao}
-                      </h3>
-                      
-                      <div className="space-y-1">
-                        <p className="text-lg font-bold text-primary">
-                          R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
-                        </p>
-                        {product.PrecoPromocional > 0 && (
-                          <p className="text-sm text-gray-500 line-through">
-                            R$ {product.Preco.toFixed(2)}
+
+                    <div className={`
+                      p-4 flex flex-col
+                      ${viewMode === 'list' ? 'flex-1' : ''}
+                    `}>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 hover:text-primary transition-colors">
+                          {product.Descricao}
+                        </h3>
+                        
+                        <div className="space-y-1 mb-4">
+                          {product.PrecoPromocional > 0 ? (
+                            <>
+                              <p className="text-sm text-gray-500 line-through">
+                                De: R$ {product.Preco.toFixed(2)}
+                              </p>
+                              <p className="text-xl font-bold text-red-600">
+                                Por: R$ {product.PrecoPromocional.toFixed(2)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xl font-bold text-primary">
+                              R$ {product.Preco.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+
+                        {viewMode === 'list' && product.DescEcommerce && (
+                          <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                            {product.DescEcommerce}
                           </p>
-                        )}
-                        <p className="text-xs text-gray-600">
-                          Em até 10x de R$ {((product.PrecoPromocional || product.Preco) / 10).toFixed(2)}
-                        </p>
-                        {product.PrecoPromocional > 0 && (
-                          <span className="inline-block mt-2 text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
-                            {Math.round(((product.Preco - product.PrecoPromocional) / product.Preco) * 100)}% OFF
-                          </span>
                         )}
                       </div>
 
-                      {viewMode === 'list' && (
-                        <p className="mt-4 text-sm text-gray-600 line-clamp-3">
-                          {product.DescEcommerce || product.Observacao}
+                      {/* Informações adicionais
+                      <div className="space-y-2 text-sm text-gray-500 mb-4">
+                        <p className="flex items-center gap-1">
+                          <BuildingStorefrontIcon className="w-4 h-4" />
+                          Marca: {product.Marca}
                         </p>
-                      )}
+                        {product.Categoria && (
+                          <p className="flex items-center gap-1">
+                            <CubeIcon className="w-4 h-4" />
+                            Categoria: {product.Categoria}
+                          </p>
+                        )}
+                      </div> */}
                     </div>
+                  </Link>
+
+                  {/* Botão Adicionar ao Carrinho */}
+                  <div className="px-4 pb-4">
+                    <button
+                      onClick={(e) => handleAddToCart(e, product)}
+                      className={`
+                        w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 
+                        transition-all duration-300 transform hover:scale-[1.02]
+                        ${product.PrecoPromocional > 0
+                          ? "bg-red-600 hover:bg-red-700 text-white"
+                          : "bg-primary hover:bg-primary-dark text-white"
+                        }
+                      `}
+                    >
+                      <ShoppingCartIcon className="w-5 h-5" />
+                      Adicionar ao Carrinho
+                    </button>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
 

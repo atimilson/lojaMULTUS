@@ -33,8 +33,9 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
       try {
         // Busca o produto específico
         const [productData] = await fetchApi(
-          `/produto/ecommerce?empresa=0&busca=${params.id}`
+          `/produto/ecommerce?empresa=1&busca=${params.id}`
         );
+        console.log(productData)
         setProduct(productData);
 
         // Busca produtos relacionados (usando a lista completa)

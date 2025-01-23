@@ -16,7 +16,7 @@ export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { fetchApi } = useApi();
-  const { setToken, setIsAuthenticated } = useAuth();
+  const { setToken, setIsAuthenticated, isAuthenticated } = useAuth();
   const router = useRouter();
 
   const login = async (credentials: LoginCredentials) => {
