@@ -13,8 +13,11 @@ import {
   IdentificationIcon,
   CalendarIcon,
   EyeIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
+import InputMask from 'react-input-mask';
+import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,23 +31,72 @@ export default function LoginPage() {
     IE: "",
     Fone: "",
     DataNascimento: "",
+    confirmarSenha: "",
     termsAccepted: false,
+    tipoPessoa: "F"
   });
   const [successMessage, setSuccessMessage] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  // Função para determinar a máscara baseada no tipo de pessoa
+  const getDocumentMask = (tipoPessoa: string) => {
+    return tipoPessoa === 'F' ? '999.999.999-99' : '99.999.999/9999-99';
+  };
+
+  // Função para formatar o valor do documento
+  const formatDocument = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/g, '$1.$2.$3-$4');
+    } else {
+      return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/g, '$1.$2.$3/$4-$5');
+    }
+  };
+
+  // Função atualizada para lidar com a máscara
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = e.target as HTMLInputElement;
+    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value
+      };
+
+      if (name === 'CPFouCNPJ') {
+        const numeroLimpo = value.replace(/\D/g, '');
+        newData.tipoPessoa = numeroLimpo.length > 11 ? 'J' : 'F';
+        if (numeroLimpo.length <= 11) {
+          newData.IE = '';
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!formData.termsAccepted) {
-      alert("Você precisa aceitar os termos de uso e política de privacidade");
+      toast.error("Você precisa aceitar os termos de uso e política de privacidade");
+      return;
+    }
+
+    if (formData.Senha !== formData.confirmarSenha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    if (formData.Senha.length < 8) {
+      toast.error("A senha deve ter no mínimo 8 caracteres");
+      return;
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(formData.Senha);
+    const hasSpecialChar = /[!@#$%^&*]/.test(formData.Senha);
+
+    if (!hasLetter || !hasSpecialChar) {
+      toast.error("A senha deve conter pelo menos uma letra e um caractere especial");
       return;
     }
 
@@ -68,7 +120,9 @@ export default function LoginPage() {
         IE: "",
         Fone: "",
         DataNascimento: "",
+        confirmarSenha: "",
         termsAccepted: false,
+        tipoPessoa: "F"
       });
     }
   };
@@ -78,7 +132,6 @@ export default function LoginPage() {
       const params = new URLSearchParams(window.location.search);
       const returnTo = params.get("returnTo");
 
-      // Se existir, redireciona para a página solicitada, senão vai para a área do usuário
       if (returnTo) {
         router.push(returnTo);
       } else {
@@ -87,7 +140,6 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Login
   const { login, isLoading: isLoginLoading, error: loginError } = useLogin();
   const [loginData, setLoginData] = useState({
     email: "",
@@ -114,7 +166,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex-1 bg-gray-50">
-      {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
           <nav className="text-sm">
@@ -135,7 +186,6 @@ export default function LoginPage() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Cadastro - Lado Esquerdo */}
               <div className="p-8 border-r border-gray-200">
                 <div className="max-w-md mx-auto space-y-6">
                   <div>
@@ -201,11 +251,55 @@ export default function LoginPage() {
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label
-                        htmlFor="Nome"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Nome completo
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Tipo de Cadastro
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <label className="relative flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 p-4 hover:border-primary transition-colors">
+                          <input
+                            type="radio"
+                            name="tipoPessoa"
+                            value="F"
+                            checked={formData.tipoPessoa === 'F'}
+                            onChange={handleChange}
+                            className="peer sr-only"
+                          />
+                          <div className="flex flex-col items-center gap-2">
+                            <UserIcon className="h-6 w-6 text-gray-500 peer-checked:text-primary" />
+                            <span className="text-sm font-medium text-gray-700 peer-checked:text-primary">
+                              Pessoa Física
+                            </span>
+                          </div>
+                          <span className="absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-primary" 
+                            aria-hidden="true"
+                          />
+                        </label>
+
+                        <label className="relative flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 p-4 hover:border-primary transition-colors">
+                          <input
+                            type="radio"
+                            name="tipoPessoa"
+                            value="J"
+                            checked={formData.tipoPessoa === 'J'}
+                            onChange={handleChange}
+                            className="peer sr-only"
+                          />
+                          <div className="flex flex-col items-center gap-2">
+                            <BuildingStorefrontIcon className="h-6 w-6 text-gray-500 peer-checked:text-primary" />
+                            <span className="text-sm font-medium text-gray-700 peer-checked:text-primary">
+                              Pessoa Jurídica
+                            </span>
+                          </div>
+                          <span className="absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-primary" 
+                            aria-hidden="true"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="Nome" className="block text-sm font-medium text-gray-700 mb-1">
+                        {formData.tipoPessoa === 'F' ? 'Nome Completo' : 'Razão Social'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -219,80 +313,75 @@ export default function LoginPage() {
                           onChange={handleChange}
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="Seu nome completo"
+                          placeholder={formData.tipoPessoa === 'F' ? 'Seu nome completo' : 'Razão Social da empresa'}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="CPFouCNPJ"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        CPF ou CNPJ
+                      <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
+                        {formData.tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <IdentificationIcon className="h-5 w-5 text-gray-400" />
                         </div>
-                        <input
-                          type="text"
-                          id="CPFouCNPJ"
-                          name="CPFouCNPJ"
+                        <InputMask
+                          mask={getDocumentMask(formData.tipoPessoa)}
                           value={formData.CPFouCNPJ}
                           onChange={handleChange}
+                          id="CPFouCNPJ"
+                          name="CPFouCNPJ"
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                          placeholder={formData.tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label
-                        htmlFor="IE"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Inscrição Estadual
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <IdentificationIcon className="h-5 w-5 text-gray-400" />
+                    {formData.tipoPessoa === 'J' && (
+                      <div>
+                        <label htmlFor="IE" className="block text-sm font-medium text-gray-700 mb-1">
+                          Inscrição Estadual
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <IdentificationIcon className="h-5 w-5 text-gray-400" />
+                          </div>
+                          <InputMask
+                            mask="999.999.999.999"
+                            value={formData.IE}
+                            onChange={handleChange}
+                            id="IE"
+                            name="IE"
+                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                            placeholder="000.000.000.000"
+                          />
                         </div>
-                        <input
-                          type="text"
-                          id="IE"
-                          name="IE"
-                          value={formData.IE}
-                          onChange={handleChange}
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="Inscrição Estadual (opcional)"
-                        />
                       </div>
-                    </div>
+                    )}
 
-                    <div>
-                      <label
-                        htmlFor="DataNascimento"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Data de Nascimento
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <CalendarIcon className="h-5 w-5 text-gray-400" />
+                    {formData.tipoPessoa === 'F' && (
+                      <div>
+                        <label htmlFor="DataNascimento" className="block text-sm font-medium text-gray-700 mb-1">
+                          Data de Nascimento
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <CalendarIcon className="h-5 w-5 text-gray-400" />
+                          </div>
+                          <input
+                            type="date"
+                            id="DataNascimento"
+                            name="DataNascimento"
+                            value={formData.DataNascimento}
+                            onChange={handleChange}
+                            required
+                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                          />
                         </div>
-                        <input
-                          type="date"
-                          id="DataNascimento"
-                          name="DataNascimento"
-                          value={formData.DataNascimento}
-                          onChange={handleChange}
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                        />
                       </div>
-                    </div>
+                    )}
 
                     <div>
                       <label
@@ -329,12 +418,12 @@ export default function LoginPage() {
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <PhoneIcon className="h-5 w-5 text-gray-400" />
                         </div>
-                        <input
-                          type="tel"
-                          id="Fone"
-                          name="Fone"
+                        <InputMask
+                          mask="(99) 99999-9999"
                           value={formData.Fone}
                           onChange={handleChange}
+                          id="Fone"
+                          name="Fone"
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
                           placeholder="(00) 00000-0000"
@@ -364,6 +453,33 @@ export default function LoginPage() {
                           placeholder="••••••••"
                         />
                       </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Mínimo 8 caracteres, uma letra e um caractere especial
+                      </p>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="confirmarSenha"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Confirmar Senha
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="password"
+                          id="confirmarSenha"
+                          name="confirmarSenha"
+                          value={formData.confirmarSenha}
+                          onChange={handleChange}
+                          required
+                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                          placeholder="••••••••"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-start">
@@ -384,7 +500,7 @@ export default function LoginPage() {
                         </Link>{" "}
                         e{" "}
                         <Link
-                          href="/privacidade"
+                          href="/politica-privacidade"
                           className="text-primary hover:text-primary-dark"
                         >
                           política de privacidade
@@ -403,7 +519,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Login - Lado Direito */}
               <div className="p-8 bg-gray-50">
                 <div className="max-w-md mx-auto space-y-6">
                   <div>
