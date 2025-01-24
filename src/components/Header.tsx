@@ -23,8 +23,11 @@ import { useRouter } from 'next/navigation';
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCart } from "@/contexts/CartContext";
 import { useCategorie } from '@/hooks/useCategorie';
+import { Empresa } from "@/types/empresa";
+import { useApi } from "@/hooks/useApi";
 
 export function Header() {
+  const { fetchApi } = useApi()
   const router = useRouter();
   const { brands, isLoading: isBrandsLoading } = useBrands();
   const { itemsCount } = useCart();
@@ -40,6 +43,7 @@ export function Header() {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [searchCategory, setSearchCategory] = useState('');
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const [empresa, setEmpresa] = useState<Empresa[]>();
 
   const filteredBrands = brands.filter(brand => 
     brand.Descricao.toLowerCase().includes(searchBrand.toLowerCase())
@@ -81,8 +85,24 @@ export function Header() {
     }
   }, [debouncedSearch, searchProducts]);
 
-  // Fechar resultados ao clicar fora
+  // Fechar resultados ao clicar for
+
   useEffect(() => {
+    async function loadEmpresas() {
+      try {
+        const data = await fetchApi('empresa?empresa=1');
+
+        setEmpresa(data);
+      } catch (err) {
+        console.error('Erro:', err);
+      } 
+    }
+
+    loadEmpresas();
+  }, []);
+  
+  useEffect(() => {
+      
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchOpen(false);
@@ -163,14 +183,15 @@ export function Header() {
       {/* Linha principal - Logo, Busca e Ações */}
       <div className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-8 mb-[-5px]">
             {/* Logo */}
             <Link href="/">
               <Image
-                src="https://www.multuscomercial.com.br/storage/empresas/24753864000142/24753864000142.png"
+                src={`data:image/png;base64,${empresa?.[0]?.LogoMarca}`}
                 alt="Multus Comercial"
-                width={140}
-                height={40}
+                width={200}
+                height={50}
+                objectFit=""
                 priority
               />
             </Link>
