@@ -1,185 +1,214 @@
+'use client'
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Header } from "@/components/Header";
+import { useApi } from "@/hooks/useApi";
 import { 
   MapPinIcon,
   PhoneIcon,
   EnvelopeIcon,
   ClockIcon,
-  BuildingStorefrontIcon,
-  TruckIcon,
-  UserGroupIcon,
-  ChartBarIcon
+  BuildingOffice2Icon,
+  DocumentTextIcon,
+  AtSymbolIcon,
 } from '@heroicons/react/24/outline';
-import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Venda na Multus | Multus Comercial',
-  description: 'Seja um parceiro Multus e expanda seus negócios'
-};
+interface Empresa {
+  Contrato: number;
+  Empresa: number;
+  Ativo: boolean;
+  CNPJ: string;
+  IE: string;
+  RazaoSocial: string;
+  Fantasia: string;
+  Fone1: string;
+  Fone2: string;
+  CodIBGE: number;
+  Endereco: string;
+  Complemento: string;
+  Numero: string;
+  Bairro: string;
+  Cidade: string;
+  UF: string;
+  CEP: string;
+  Email: string;
+  CodClienteConsumidor: number;
+  LogoMarca: string;
+}
 
-export default function VendaNaMultusPage() {
+export default function NossasLojasPage() {
+  const { fetchApi } = useApi();
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadEmpresas() {
+      try {
+        const data = await fetchApi('empresa?empresa=0');
+        setEmpresas(data);
+      } catch (err) {
+        setError('Erro ao carregar informações das empresas');
+        console.error('Erro:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadEmpresas();
+  }, [fetchApi]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center text-red-500">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
       <main className="flex-1">
-        {/* Banner Principal com as Lojas */}
-        <div className="bg-gradient-to-r from-primary to-primary-dark text-white py-12">
+        {/* Banner Principal */}
+        <div className="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
           <div className="container mx-auto px-4">
-            <h1 className="text-4xl font-bold mb-8 text-center">Nossas Lojas</h1>
-            
-            {/* Grid de Cards das Lojas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-              {/* Card Loja General Melo */}
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-[1.02] transition-transform">
-                <div className="relative h-64">
-                  <Image
-                    src="https://www.multuscomercial.com.br/storage/empresas/24753864000142/lojas/DmKUc1Q7nUVBW3c1Dg3uJ3y50TiW00-metabXVsdHVzMi5qcGc=-.jpeg"
-                    alt="Loja General Melo"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-6 text-gray-800">
-                  <h3 className="text-2xl font-bold mb-4 text-primary">Loja General Melo</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <ClockIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-                      <div>
-                        <p className="font-semibold mb-2">Horário de Funcionamento:</p>
-                        <p>Segunda à Sexta: 08:00 às 18:00</p>
-                        <p>Sábado: 08:00 às 13:00</p>
-                        <p>Domingo: Fechado</p>
-                      </div>
+            <h1 className="text-4xl font-bold mb-4 text-center">Nossas Lojas</h1>
+            <p className="text-center text-lg opacity-90 max-w-2xl mx-auto">
+              Encontre a loja mais próxima de você e venha nos conhecer
+            </p>
+          </div>
+        </div>
+
+        {/* Lista de Empresas */}
+        <div className="py-16 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+              {empresas.map((empresa) => (
+                <div 
+                  key={empresa.Empresa}
+                  className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:shadow-xl transition-shadow duration-300"
+                >
+                  {/* Cabeçalho com Logo */}
+                  <div className="p-6 bg-gray-50 border-b flex items-center gap-6">
+                    <div className="relative w-24 h-24 flex-shrink-0">
+                      <Image
+                        src={`data:image/png;base64,${empresas[0].LogoMarca}`}
+                        alt={empresa.Fantasia}
+                        fill
+                        className="object-contain"
+                      />
                     </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <MapPinIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">{empresa.Fantasia}</h2>
+                      <p className="text-gray-600">{empresa.RazaoSocial}</p>
+                    </div>
+                  </div>
+
+                  {/* Informações */}
+                  <div className="p-6 space-y-6">
+                    {/* Endereço */}
+                    <div className="flex gap-4">
+                      <MapPinIcon className="w-6 h-6 text-primary flex-shrink-0" />
                       <div>
-                        <p className="font-semibold mb-2">Endereço:</p>
-                        <p>Avenida Tenente Praeiro, 3255</p>
-                        <p>Jardim Califórnia</p>
-                        <p>Cuiabá - MT, 78070-300</p>
+                        <h3 className="font-semibold text-gray-900 mb-2">Endereço</h3>
+                        <p className="text-gray-600">
+                          {empresa.Endereco}, {empresa.Numero}
+                          {empresa.Complemento && ` - ${empresa.Complemento}`}
+                          <br />
+                          {empresa.Bairro}
+                          <br />
+                          {empresa.Cidade} - {empresa.UF}
+                          <br />
+                          CEP: {empresa.CEP}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3">
+                    {/* Contatos */}
+                    <div className="flex gap-4">
                       <PhoneIcon className="w-6 h-6 text-primary flex-shrink-0" />
                       <div>
-                        <p className="font-semibold mb-2">Telefone:</p>
-                        <p>(65) 2136-4199</p>
+                        <h3 className="font-semibold text-gray-900 mb-2">Telefones</h3>
+                        <p className="text-gray-600">
+                          {empresa.Fone1}
+                          {empresa.Fone2 && <><br />{empresa.Fone2}</>}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Card Loja Nova Esperança */}
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-[1.02] transition-transform">
-                <div className="relative h-64">
-                  <Image
-                    src="https://www.multuscomercial.com.br/storage/empresas/24753864000142/lojas/N8NoA8PWqWQc6QtUQhu1LH5zlbAKTq-metabXVsdHVzMS5qcGc=-.jpeg"
-                    alt="Loja Nova Esperança"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-6 text-gray-800">
-                  <h3 className="text-2xl font-bold mb-4 text-primary">Loja Nova Esperança</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <ClockIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+                    {/* Email */}
+                    <div className="flex gap-4">
+                      <EnvelopeIcon className="w-6 h-6 text-primary flex-shrink-0" />
                       <div>
-                        <p className="font-semibold mb-2">Horário de Funcionamento:</p>
-                        <p>Segunda à Sexta: 08:00 às 18:00</p>
-                        <p>Sábado: 08:00 às 13:00</p>
-                        <p>Domingo: Fechado</p>
+                        <h3 className="font-semibold text-gray-900 mb-2">E-mail</h3>
+                        <p className="text-gray-600">{empresa.Email}</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <MapPinIcon className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
+
+                    {/* CNPJ/IE
+                    <div className="flex gap-4">
+                      <DocumentTextIcon className="w-6 h-6 text-primary flex-shrink-0" />
                       <div>
-                        <p className="font-semibold mb-2">Endereço:</p>
-                        <p>Avenida V-2, 89</p>
-                        <p>Jardim Industriário</p>
-                        <p>Cuiabá - MT, 78099-357</p>
+                        <h3 className="font-semibold text-gray-900 mb-2">Documentos</h3>
+                        <p className="text-gray-600">
+                          CNPJ: {empresa.CNPJ}
+                          <br />
+                          IE: {empresa.IE}
+                        </p>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
+
+                  {/* Mapa */}
+                  {/* Mapa usando OpenStreetMap */}
+                  {/* <div className="h-[300px] w-full border-t">
+                    <iframe
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(
+                        `${empresa.Endereco}, ${empresa.Numero}, ${empresa.Cidade}, ${empresa.UF}, Brasil`
+                      )}&layer=mapnik`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      className="w-full h-full"
+                    ></iframe>
+                    <div className="p-2 bg-gray-50 text-sm text-center">
+                      <a 
+                        href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(
+                          `${empresa.Endereco}, ${empresa.Numero}, ${empresa.Cidade}, ${empresa.UF}, Brasil`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary-dark"
+                      >
+                        Ver mapa maior
+                      </a>
+                    </div>
+                  </div> */}
+                  
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
-
-        
-
-        {/* Informações da Loja */}
-        <div className="bg-gray-50 py-16">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-12 text-center text-gray-700">Nossa Loja Física</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <MapPinIcon className="w-8 h-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2 text-gray-700">Endereço</h3>
-                <p className="text-gray-600">
-                  Avenida General Mello, N° 3255
-                  <br />
-                  Jardim Califórnia
-                  <br />
-                  Cuiabá - MT
-                  <br />
-                  CEP 78070-300
-                </p>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <PhoneIcon className="w-8 h-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2 text-gray-700">Telefones</h3>
-                <p className="text-gray-600">
-                  (65) 2136-4199
-                  <br />
-                  (65) 99999-9999 (WhatsApp)
-                </p>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <ClockIcon className="w-8 h-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2 text-gray-700">Horário de Funcionamento</h3>
-                <p className="text-gray-600">
-                  Segunda a Sexta: 08h às 18h
-                  <br />
-                  Sábado: 08h às 12h
-                </p>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <EnvelopeIcon className="w-8 h-8 text-primary mb-4" />
-                <h3 className="font-semibold mb-2 text-gray-700">Contato</h3>
-                <p className="text-gray-600">
-                  vendas@multuscomercial.com.br
-                  <br />
-                  CNPJ: 24.753.864/0001-42
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Mapa */}
-        <div className="h-[400px] w-full">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3843.4175247785897!2d-56.118800585076916!3d-15.579999989182439!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x939db1b40f388773%3A0x3e70f0d0a7b8f00!2sAv.%20Gen.%20Mello%2C%203255%20-%20Jardim%20California%2C%20Cuiab%C3%A1%20-%20MT%2C%2078070-300!5e0!3m2!1spt-BR!2sbr!4v1647881234567!5m2!1spt-BR!2sbr"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-          ></iframe>
-        </div>      
-
       </main>
     </div>
   );

@@ -13,11 +13,16 @@ import {
   ChevronDownIcon,
   BuildingStorefrontIcon,
   ChatBubbleLeftRightIcon,
+  FolderIcon,
+  TagIcon,
+  ChevronRightIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline'
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from 'next/navigation';
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCart } from "@/contexts/CartContext";
+import { useCategorie } from '@/hooks/useCategorie';
 
 export function Header() {
   const router = useRouter();
@@ -31,6 +36,10 @@ export function Header() {
   const { searchResults, isLoading: isSearchLoading, searchProducts } = useSearch();
   const debouncedSearch = useDebounce(searchQuery, 300);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { categories, isLoading: isCategoriesLoading } = useCategorie();
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [searchCategory, setSearchCategory] = useState('');
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredBrands = brands.filter(brand => 
     brand.Descricao.toLowerCase().includes(searchBrand.toLowerCase())
@@ -45,6 +54,23 @@ export function Header() {
     acc[firstLetter].push(brand);
     return acc;
   }, {} as Record<string, typeof brands>);
+
+  // Filtrar categorias baseado na busca
+  const filteredCategories = categories.filter(category =>
+    category.Descricao.toLowerCase().includes(searchCategory.toLowerCase())
+  );
+
+  // Agrupar categorias por letra inicial (ordem alfabética)
+  const groupedCategories = useMemo(() => {
+    return filteredCategories.reduce((acc, category) => {
+      const firstLetter = category.Descricao.charAt(0).toUpperCase();
+      if (!acc[firstLetter]) {
+        acc[firstLetter] = [];
+      }
+      acc[firstLetter].push(category);
+      return acc;
+    }, {} as Record<string, typeof categories>);
+  }, [filteredCategories]);
 
   useEffect(() => {
     if (debouncedSearch) {
@@ -92,6 +118,23 @@ export function Header() {
       document.removeEventListener('keydown', handleEscKey);
     };
   }, [isDropdownOpen]);
+
+  // Fechar dropdown de categorias ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    }
+
+    if (isCategoryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCategoryDropdownOpen]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -220,6 +263,88 @@ export function Header() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
+              {/* Menu de Categorias */}
+              <div className="relative" ref={categoryDropdownRef}>
+                <button 
+                  className="flex items-center gap-2 py-4 hover:text-gray-200 transition-colors"
+                  onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                >
+                  <TagIcon className="w-6 h-6" />
+                  <span className="font-medium">Categorias</span>
+                  <ChevronDownIcon className="w-4 h-4" />
+                </button>
+
+                {/* Dropdown de Categorias */}
+                {isCategoryDropdownOpen && (
+                  <div 
+                    className="absolute top-full left-0 w-screen max-w-4xl bg-white shadow-lg rounded-b-lg flex flex-col"
+                    style={{ maxHeight: 'calc(100vh - 200px)' }}
+                  >
+                    {/* Barra de pesquisa fixa no topo */}
+                    <div className="sticky top-0 bg-white p-4 border-b z-10">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Buscar categoria..."
+                          value={searchCategory}
+                          onChange={(e) => setSearchCategory(e.target.value)}
+                          className="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                      </div>
+                    </div>
+
+                    {/* Lista de categorias com scroll */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-3 gap-6 p-6">
+                        {Object.entries(groupedCategories).map(([letter, letterCategories]) => (
+                          letterCategories.length > 0 && (
+                            <div key={letter} className="space-y-3">
+                              <h3 className="font-bold text-primary text-lg flex items-center gap-2">
+                                <span className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                                  {letter}
+                                </span>
+                              </h3>
+                              <div className="space-y-1">
+                                {letterCategories
+                                  .sort((a, b) => a.Descricao.localeCompare(b.Descricao))
+                                  .map((category) => (
+                                    <Link
+                                      key={category.Codigo}
+                                      href={`/categoria/${encodeURIComponent(category.Codigo)}`}
+                                      className="block px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 text-sm transition-colors group"
+                                      onClick={() => setIsCategoryDropdownOpen(false)}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className="group-hover:text-primary transition-colors">
+                                          {category.Descricao}
+                                        </span>
+                                        <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
+                                      </div>
+                                    </Link>
+                                  ))}
+                              </div>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer fixo */}
+                    <div className="sticky bottom-0 bg-gray-50 p-4 border-t text-center">
+                      <Link
+                        href="/categorias"
+                        className="text-primary hover:text-primary-dark font-medium inline-flex items-center gap-2"
+                        onClick={() => setIsCategoryDropdownOpen(false)}
+                      >
+                        Ver todas as categorias
+                        <ArrowRightIcon className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Menu de marcas com dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button 

@@ -92,7 +92,7 @@ export default function Home() {
       <Header />
 
       <main className="flex-1">
-        <BannerCarousel banners={banners} />
+        <BannerCarousel />
 
         <ProductCarousel
           title="Ofertas Imperdíveis"
