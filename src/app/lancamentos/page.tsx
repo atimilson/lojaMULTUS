@@ -42,7 +42,7 @@ export default function LancamentosPage() {
   // Carregar produtos
   useEffect(() => {
     async function loadProducts() {
-      try {
+      try {        
         const data = await fetchApi('/produto/ecommerce/novos?empresa=1');
         setProducts(data);
       } catch (err) {
@@ -52,9 +52,9 @@ export default function LancamentosPage() {
         setIsLoading(false);
       }
     }
-
+    setIsLoading(true);
     loadProducts();
-  }, [token]);
+  }, [, token]);
 
   // Extrair marcas e categorias únicas
   const brands = useMemo(() => {
