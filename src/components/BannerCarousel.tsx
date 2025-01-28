@@ -37,7 +37,7 @@ export function BannerCarousel() {
     }
 
     loadBanners()
-  }, [fetchApi])
+  }, [])
 
   if (isLoading) {
     return (

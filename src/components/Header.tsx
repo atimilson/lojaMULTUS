@@ -191,7 +191,6 @@ export function Header() {
                 alt="Multus Comercial"
                 width={200}
                 height={50}
-                objectFit=""
                 priority
               />
             </Link>
