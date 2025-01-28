@@ -35,7 +35,7 @@ export default function LancamentosPage() {
   const [sortOrder, setSortOrder] = useState<'relevancia' | 'menor' | 'maior' | 'nome'>('relevancia');
 
   // Hooks
-  const { isLoading: isAuthLoading } = useAuth();
+  const { isLoading: isAuthLoading,token } = useAuth();
   const { fetchApi } = useApi();
   const { addItem } = useCart();
 
@@ -54,7 +54,7 @@ export default function LancamentosPage() {
     }
 
     loadProducts();
-  }, []);
+  }, [token]);
 
   // Extrair marcas e categorias únicas
   const brands = useMemo(() => {
