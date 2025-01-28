@@ -35,7 +35,7 @@ export default function NossasLojasPage() {
     }
 
     loadEmpresas();
-  }, [fetchApi]);
+  }, []);
 
   if (isLoading) {
     return (
