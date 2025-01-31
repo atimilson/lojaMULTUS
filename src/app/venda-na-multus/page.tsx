@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGetApiEmpresa } from '@/api/generated/mCNSistemas';
+import type { EmpresaDto as Empresa } from '@/api/generated/mCNSistemas.schemas';
 import Image from "next/image";
 import { Header } from "@/components/Header";
-import { useApi } from "@/hooks/useApi";
 import { 
   MapPinIcon,
   PhoneIcon,
@@ -13,29 +15,17 @@ import {
   DocumentTextIcon,
   AtSymbolIcon,
 } from '@heroicons/react/24/outline';
-import { Empresa } from "@/types/empresa";
 
 export default function NossasLojasPage() {
-  const { fetchApi } = useApi();
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { isLoading: isAuthLoading, error: authError } = useAuth();
 
-  useEffect(() => {
-    async function loadEmpresas() {
-      try {
-        const data = await fetchApi('empresa?empresa=0');
-        setEmpresas(data);
-      } catch (err) {
-        setError('Erro ao carregar informações das empresas');
-        console.error('Erro:', err);
-      } finally {
-        setIsLoading(false);
-      }
+  const { data: empresas = [], error: apiError, isLoading } = useGetApiEmpresa({
+    empresa: 0
+  }, {
+    swr: {
+      enabled: !isAuthLoading && !authError
     }
-
-    loadEmpresas();
-  }, []);
+  });
 
   if (isLoading) {
     return (
@@ -43,17 +33,6 @@ export default function NossasLojasPage() {
         <Header />
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center text-red-500">
-          {error}
         </div>
       </div>
     );
@@ -88,16 +67,17 @@ export default function NossasLojasPage() {
                     <div className="relative w-24 h-24 flex-shrink-0">
                       <Image
                         src={`data:image/png;base64,${empresas[0].LogoMarca}`}
-                        alt={empresa.Fantasia}
+                        alt={empresa.Fantasia || ''}
                         fill
                         className="object-contain"
                       />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">{empresa.Fantasia}</h2>
-                      <p className="text-gray-600">{empresa.RazaoSocial}</p>
+                      <h2 className="text-2xl font-bold text-gray-900">{empresa.Fantasia || ''}</h2>
+                      <p className="text-gray-600">{empresa.RazaoSocial || ''}</p>
                     </div>
                   </div>
+
 
                   {/* Informações */}
                   <div className="p-6 space-y-6">

@@ -23,11 +23,12 @@ import { useRouter } from 'next/navigation';
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCart } from "@/contexts/CartContext";
 import { useCategorie } from '@/hooks/useCategorie';
-import { Empresa } from "@/types/empresa";
-import { useApi } from "@/hooks/useApi";
+import { useGetApiEmpresa } from '@/api/generated/mCNSistemas';
+import type { EmpresaDto as Empresa } from '@/api/generated/mCNSistemas.schemas';
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
-  const { fetchApi } = useApi()
+  const { isLoading: isAuthLoading, error: authError } = useAuth();
   const router = useRouter();
   const { brands, isLoading: isBrandsLoading } = useBrands();
   const { itemsCount } = useCart();
@@ -43,31 +44,39 @@ export function Header() {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [searchCategory, setSearchCategory] = useState('');
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
-  const [empresa, setEmpresa] = useState<Empresa[]>();
+
+  const { data: empresa = [] } = useGetApiEmpresa({
+    empresa: 1
+  }, {
+    swr: {
+      enabled: !isAuthLoading && !authError
+    }
+  });
 
   const filteredBrands = brands.filter(brand => 
-    brand.Descricao.toLowerCase().includes(searchBrand.toLowerCase())
+    brand.Descricao?.toLowerCase().includes(searchBrand.toLowerCase()) || false
   );
 
   // Organiza as marcas por letra inicial
   const groupedBrands = filteredBrands.reduce((acc, brand) => {
-    const firstLetter = brand.Descricao.charAt(0).toUpperCase();
+    const firstLetter = brand.Descricao?.charAt(0).toUpperCase() || '';
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
     }
     acc[firstLetter].push(brand);
     return acc;
+
   }, {} as Record<string, typeof brands>);
 
   // Filtrar categorias baseado na busca
   const filteredCategories = categories.filter(category =>
-    category.Descricao.toLowerCase().includes(searchCategory.toLowerCase())
+    category.Descricao?.toLowerCase().includes(searchCategory.toLowerCase()) || false
   );
 
   // Agrupar categorias por letra inicial (ordem alfabética)
   const groupedCategories = useMemo(() => {
     return filteredCategories.reduce((acc, category) => {
-      const firstLetter = category.Descricao.charAt(0).toUpperCase();
+      const firstLetter = category.Descricao?.charAt(0).toUpperCase() || '';
       if (!acc[firstLetter]) {
         acc[firstLetter] = [];
       }
@@ -88,21 +97,6 @@ export function Header() {
   // Fechar resultados ao clicar for
 
   useEffect(() => {
-    async function loadEmpresas() {
-      try {
-        const data = await fetchApi('empresa?empresa=1');
-
-        setEmpresa(data);
-      } catch (err) {
-        console.error('Erro:', err);
-      } 
-    }
-
-    loadEmpresas();
-  }, []);
-  
-  useEffect(() => {
-      
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchOpen(false);
@@ -234,10 +228,11 @@ export function Header() {
                     >
                       <div className="relative w-16 h-16">
                         <Image
-                          src={product.Imagens[0]?.URL || '/placeholder.jpg'}
-                          alt={product.Descricao}
+                          src={product.Imagens?.[0]?.URL || '/placeholder.jpg'}
+                          alt={product.Descricao || ''}
                           fill
                           className="object-contain"
+
                         />
                       </div>
                       <div className="flex-1">
@@ -245,7 +240,7 @@ export function Header() {
                           {product.Descricao}
                         </h4>
                         <p className="text-sm font-bold text-primary mt-1">
-                          R$ {product.Preco.toFixed(2)}
+                          R$ {product.Preco?.toFixed(2) || '0.00'}
                         </p>
                       </div>
                     </Link>
@@ -327,14 +322,15 @@ export function Header() {
                               </h3>
                               <div className="space-y-1">
                                 {letterCategories
-                                  .sort((a, b) => a.Descricao.localeCompare(b.Descricao))
+                                  .sort((a, b) => a.Descricao?.localeCompare(b.Descricao || '') || 0)
                                   .map((category) => (
                                     <Link
                                       key={category.Codigo}
-                                      href={`/categoria/${encodeURIComponent(category.Codigo)}`}
+                                      href={`/categoria/${encodeURIComponent(category.Codigo || 0)}`}
                                       className="block px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 text-sm transition-colors group"
                                       onClick={() => setIsCategoryDropdownOpen(false)}
                                     >
+
                                       <div className="flex items-center justify-between">
                                         <span className="group-hover:text-primary transition-colors">
                                           {category.Descricao}
@@ -408,10 +404,11 @@ export function Header() {
                               <div className="space-y-1">
                                 {letterBrands.map((brand) => (
                                   <Link
-                                    key={brand.Codigo}
-                                    href={`/marca/${encodeURIComponent(brand.Codigo)}`}
+                                    key={brand.Codigo || ''}
+                                    href={`/marca/${encodeURIComponent(brand.Codigo || 0)}`}
                                     className="block px-2 py-1 rounded hover:bg-gray-50 text-gray-700 text-sm"
                                     onClick={() => setIsDropdownOpen(false)}
+
                                   >
                                     {brand.Descricao}
                                   </Link>

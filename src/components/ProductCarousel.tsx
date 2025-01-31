@@ -6,10 +6,11 @@ import { Product } from "@/types/product";
 import { ArrowRightIcon, ShoppingCartIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCart } from "@/contexts/CartContext";
 import toast from "react-hot-toast";
+import { ProdutosEcommerceDto, ProdutosEmPromocaoEcommerceDto } from "@/api/generated/mCNSistemas.schemas";
 
 interface ProductCarouselProps {
   title: string;
-  products: Product[];
+  products: (ProdutosEcommerceDto | ProdutosEmPromocaoEcommerceDto)[];
   viewAllLink: string;
   isPromotion?: boolean;
 }
@@ -19,7 +20,7 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
 
   const handleAddToCart = (
     e: React.MouseEvent<HTMLButtonElement>,
-    product: Product
+    product: ProdutosEcommerceDto
   ) => {
     e.preventDefault();
     addItem(product, 1);
@@ -27,8 +28,9 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 relative w-12 h-12">
           <Image
-            src={product.Imagens[0]?.URL || '/placeholder.jpg'}
-            alt={product.Descricao}
+            src={product.Imagens?.[0]?.URL || '/placeholder.jpg'}
+
+            alt={product.Descricao || ''}
             fill
             className="object-contain"
           />
@@ -42,9 +44,20 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
     );
   };
 
-  const calculateDiscount = (original: number, promotional: number) => {
-    return Math.round(((original - promotional) / original) * 100);
+  const isEcommerceProduct = (product: ProdutosEcommerceDto | ProdutosEmPromocaoEcommerceDto): product is ProdutosEcommerceDto => {
+    return 'Preco' in product;
   };
+
+  const getOriginalPrice = (product: ProdutosEcommerceDto | ProdutosEmPromocaoEcommerceDto) => {
+    return isEcommerceProduct(product) ? product.Preco : product.PrecoNormal;
+  };
+
+  const calculateDiscount = (product: ProdutosEcommerceDto | ProdutosEmPromocaoEcommerceDto) => {
+    const originalPrice = getOriginalPrice(product);
+    if (!originalPrice || !product.PrecoPromocional || originalPrice <= product.PrecoPromocional) return 0;
+    return Math.round(((originalPrice - product.PrecoPromocional) / originalPrice) * 100);
+  };
+
 
   return (
     <section className={`py-8 ${isPromotion ? 'bg-red-50' : ''}`}>
@@ -70,22 +83,24 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
             <div
               key={product.Produto}
               className={`bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 p-4 relative group
-                ${product.PrecoPromocional > 0 ? 'border-2 border-red-200' : ''}`}
+                ${  product.PrecoPromocional > 0 ? 'border-2 border-red-200' : ''}`}
             >
               {/* Badge de desconto */}
-              {product.PrecoPromocional > 0 && (
+              {
+                  product.PrecoPromocional > 0 &&  (
                 <div className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-bold z-10">
-                  -{calculateDiscount(product.Preco, product.PrecoPromocional)}%
+                  -{calculateDiscount(product)}%
                 </div>
               )}
 
               <Link href={`/produto/${product.Produto}`}>
                 <div className="relative h-48 mb-4 group-hover:scale-105 transition-transform duration-300">
                   <Image
-                    src={product.Imagens[0]?.URL || '/placeholder-product.jpg'}
-                    alt={product.Descricao}
+                    src={product.Imagens?.[0]?.URL || '/placeholder-product.jpg'}
+                    alt={product.Descricao || ''}
                     fill
                     className="object-contain"
+
                   />
                 </div>
 
@@ -96,18 +111,19 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
                   </h3>
 
                   <div className="space-y-1">
-                    {product.PrecoPromocional > 0 && (
+                    {  product.PrecoPromocional > 0 && (
                       <div className="flex items-center gap-2">
                         <p className="text-sm text-gray-500 line-through">
-                          R$ {product.Preco.toFixed(2)}
+                          R$ {getOriginalPrice(product)?.toFixed(2) || '0.00'}
                         </p>
                         <span className="text-xs text-red-500 font-medium">
-                          Economize R$ {(product.Preco - product.PrecoPromocional).toFixed(2)}
+                          Economize R$ {(getOriginalPrice(product) || 0 - product.PrecoPromocional || 0).toFixed(2)}
                         </span>
                       </div>
                     )}
-                    <p className={`text-xl font-bold ${product.PrecoPromocional > 0 ? 'text-red-600' : 'text-primary'}`}>
-                      R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
+                    <p className={`text-xl font-bold ${  product.PrecoPromocional > 0 ? 'text-red-600' : 'text-primary'}`}>
+                      R$ {(product.PrecoPromocional || getOriginalPrice(product) || 0).toFixed(2)}
+
                     </p>
                   </div>
                 </div>
@@ -115,9 +131,9 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
 
               {/* Botão Adicionar ao Carrinho */}
               <button
-                onClick={(e) => handleAddToCart(e, product)}
+                onClick={(e) => handleAddToCart(e, product as ProdutosEcommerceDto)}
                 className={`w-full mt-4 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors
-                  ${product.PrecoPromocional > 0 
+                  ${  product.PrecoPromocional > 0 
                     ? 'bg-red-600 hover:bg-red-700 text-white' 
                     : 'bg-primary hover:bg-primary-dark text-white'}`}
               >

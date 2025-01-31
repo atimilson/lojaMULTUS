@@ -1,30 +1,20 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { customInstance } from '@/api/mutator/custom-instance';
 
 export function useApi() {
   const { token } = useAuth();
 
-  async function fetchApi(endpoint: string, options: RequestInit = {}) {
+  const fetcher = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     if (!token) {
       throw new Error('Token não disponível');
     }
 
-    const headers = {
-      'Authorization': token,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    const response = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api/${endpoint}`, {
-      ...options,
-      headers,
+    return customInstance<T>({
+      url: endpoint,
+      method: options.method || 'GET',
+      data: options.body,
     });
+  };
 
-    if (!response.ok) {
-      throw new Error('Erro na requisição');
-    }
-
-    return response.json();
-  }
-
-  return { fetchApi };
+  return { fetcher };
 } 

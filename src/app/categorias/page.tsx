@@ -11,12 +11,12 @@ export default function CategoriesPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredCategories = categories.filter(category =>
-    category.Descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    category.Descricao?.toLowerCase().includes(searchTerm.toLowerCase()) || false
   );
 
   // Organiza as categorias por letra inicial
   const groupedCategories = filteredCategories.reduce((acc, category) => {
-    const firstLetter = category.Descricao.charAt(0).toUpperCase();
+    const firstLetter = category.Descricao?.charAt(0).toUpperCase() || '';
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
     }
@@ -100,7 +100,7 @@ export default function CategoriesPage() {
                   {letterCategories.map((category) => (
                     <Link
                       key={category.Codigo}
-                      href={`/categoria/${encodeURIComponent(category.Codigo)}`}
+                      href={`/categoria/${encodeURIComponent(category.Codigo || 0)}`}
                       className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors group"
                     >
                       <TagIcon className="w-4 h-4 text-gray-400 group-hover:text-primary" />

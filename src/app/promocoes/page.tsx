@@ -15,9 +15,10 @@ import { useState, useMemo } from 'react';
 import { Product } from "@/types/product";
 import { useCart } from "@/contexts/CartContext";
 import toast from 'react-hot-toast';
+import { ProdutosEmPromocaoEcommerceDto } from "@/api/generated/mCNSistemas.schemas";
 
 export default function PromocoesPage() {
-  const { promotions, isLoading, error } = usePromotions();
+  const { promotions = [], isLoading, error } = usePromotions();
   const { addItem } = useCart();
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
@@ -37,36 +38,46 @@ export default function PromocoesPage() {
 
   // Filtrar e ordenar produtos
   const filteredProducts = useMemo(() => {
-    let filtered = [...promotions];
+    let filtered: ProdutosEmPromocaoEcommerceDto[] = [];
+    
+    if (Array.isArray(promotions) && promotions.length > 0) {
+      filtered = [...promotions];
 
-    // Aplicar filtros de marca
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter(p => 
-        p.Marca && selectedBrands.includes(p.Marca)
-      );
-    }
+      // Aplicar filtros de marca
+      if (selectedBrands.length > 0) {
+        filtered = filtered.filter(p => 
+          p.Marca && selectedBrands.includes(p.Marca)
+        );
+      }
 
-    // Aplicar filtro de preço
-    filtered = filtered.filter(p => {
-      const price = p.PrecoPromocional || p.Preco;
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
+      // Aplicar filtro de preço
+      filtered = filtered.filter(p => {
+        const price = p.PrecoPromocional || p.PrecoNormal || 0;
+        return price >= priceRange[0] && price <= priceRange[1];
+      });
 
-    // Ordenação
-    switch (sortOrder) {
-      case 'maior_desconto':
-        filtered.sort((a, b) => {
-          const discountA = ((a.Preco - (a.PrecoPromocional || a.Preco)) / a.Preco) * 100;
-          const discountB = ((b.Preco - (b.PrecoPromocional || b.Preco)) / b.Preco) * 100;
-          return discountB - discountA;
-        });
-        break;
-      case 'menor_preco':
-        filtered.sort((a, b) => (a.PrecoPromocional || a.Preco) - (b.PrecoPromocional || b.Preco));
-        break;
-      case 'maior_preco':
-        filtered.sort((a, b) => (b.PrecoPromocional || b.Preco) - (a.PrecoPromocional || a.Preco));
-        break;
+      // Ordenação
+      switch (sortOrder) {
+        case 'maior_desconto':
+          filtered.sort((a, b) => {
+            const aNormal = a.PrecoNormal || 0;
+            const aPromo = a.PrecoPromocional || aNormal;
+            const bNormal = b.PrecoNormal || 0;
+            const bPromo = b.PrecoPromocional || bNormal;
+
+            const discountA = ((aNormal - aPromo) / aNormal) * 100;
+            const discountB = ((bNormal - bPromo) / bNormal) * 100;
+            return discountB - discountA;
+          });
+
+          break;
+        case 'menor_preco':
+          filtered.sort((a, b) => (a.PrecoPromocional || a.PrecoNormal || 0) - (b.PrecoPromocional || b.PrecoNormal || 0));
+          break;
+        case 'maior_preco':
+          filtered.sort((a, b) => (b.PrecoPromocional || b.PrecoNormal || 0) - (a.PrecoPromocional || a.PrecoNormal || 0));
+          break;
+      }
     }
 
     return filtered;
@@ -203,16 +214,18 @@ export default function PromocoesPage() {
                       <div className="p-4">
                         <div className="relative aspect-square mb-4 group-hover:scale-105 transition-transform duration-300">
                           <Image
-                            src={product.Imagens[0]?.URL || '/placeholder.jpg'}
-                            alt={product.Descricao}
+                            src={product.Imagens?.[0]?.URL || '/placeholder.jpg'}
+                            alt={product.Descricao || 'Produto'}
                             fill
                             className="object-contain"
                           />
-                          {product.PrecoPromocional > 0 && (
+                          {product.PrecoPromocional && product.PrecoPromocional > 0 && (
                             <div className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold z-10 shadow-lg">
-                              -{Math.round(((product.Preco - product.PrecoPromocional) / product.Preco) * 100)}%
+                              -{Math.round(((product.PrecoNormal || 0 - product.PrecoPromocional || 0) / (product.PrecoNormal || 0)) * 100)}%
                             </div>
                           )}
+
+
                         </div>
                         
                         <div className="space-y-2">
@@ -222,18 +235,19 @@ export default function PromocoesPage() {
                           </h3>
                           
                           <div className="space-y-1">
-                            {product.PrecoPromocional > 0 && (
+                            {product.PrecoPromocional && product.PrecoPromocional > 0 && (
                               <div className="flex items-center gap-2">
                                 <p className="text-sm text-gray-500 line-through">
-                                  R$ {product.Preco.toFixed(2)}
+                                  R$ {product.PrecoNormal?.toFixed(2) || '0.00'}
+
                                 </p>
                                 <span className="text-xs text-red-500 font-medium">
-                                  Economize R$ {(product.Preco - product.PrecoPromocional).toFixed(2)}
+                                  Economize R$ {(product.PrecoNormal || 0 - product.PrecoPromocional || 0).toFixed(2)}
                                 </span>
                               </div>
                             )}
                             <p className="text-2xl font-bold text-red-600">
-                              R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
+                              R$ {(product.PrecoPromocional || product.PrecoNormal || 0).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -249,8 +263,8 @@ export default function PromocoesPage() {
                           <div className="flex items-center gap-3">
                             <div className="flex-shrink-0 relative w-12 h-12">
                               <Image
-                                src={product.Imagens[0]?.URL || '/placeholder.jpg'}
-                                alt={product.Descricao}
+                                src={product.Imagens?.[0]?.URL || '/placeholder.jpg'}
+                                alt={product.Descricao || 'Produto'}
                                 fill
                                 className="object-contain"
                               />

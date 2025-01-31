@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.Token) {
         setToken(data.Token);
+        localStorage.setItem('token', data.Token);
       } else {
         setError('Falha na autenticação');
       }

@@ -1,47 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useApi } from './useApi';
-import { useAuth } from '@/contexts/AuthContext';
+'use client'
 
-interface SocialMedia {
-  Empresa: number;
-  RedeSocial: string;
-  URL: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { useGetApiEmpresaRedesocial } from '@/api/generated/mCNSistemas';
+import type { RedeSocialDto } from '@/api/generated/mCNSistemas.schemas';
 
 export function useSocialMedia() {
-  const [socialMedia, setSocialMedia] = useState<SocialMedia[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
-  const { fetchApi } = useApi();
+  const { isLoading: isAuthLoading, error: authError } = useAuth();
 
-  useEffect(() => {
-    async function loadSocialMedia() {
-      if (!token) {
-        setError('Usuário não autenticado');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const data = await fetchApi('/empresa/redesocial?empresa=1');
-        setSocialMedia(data);
-      } catch (err) {
-        console.error('Erro ao carregar redes sociais:', err);
-        setError('Erro ao carregar informações de contato');
-      } finally {
-        setIsLoading(false);
-      }
+  const {
+    data: socialMedia,
+    error,
+    isLoading,
+  } = useGetApiEmpresaRedesocial({ empresa: 1 }, {
+    swr: {
+      enabled: !isAuthLoading && !authError,
     }
-
-    loadSocialMedia();
-  }, [token]);
+  });
 
   const getSocialMediaUrl = (type: string) => {
-    const social = socialMedia.find(s => s.RedeSocial.toUpperCase() === type.toUpperCase());
+    const social = socialMedia?.find(s => 
+      s.RedeSocial?.toUpperCase() === type.toUpperCase()
+    );
     return social?.URL || '';
   };
 
-  return { socialMedia, isLoading, error, getSocialMediaUrl };
+  return {
+    socialMedia: socialMedia || [],
+    isLoading,
+    error: error ? 'Erro ao carregar informações de contato' : null,
+    getSocialMediaUrl
+  };
 } 

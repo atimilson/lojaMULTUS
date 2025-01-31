@@ -1,51 +1,17 @@
+'use client'
+
 import { useState } from 'react';
-import { useApi } from './useApi';
-import { useAuth } from '@/contexts/AuthContext';
-
-interface RegisterData {
-  Nome: string;
-  Email: string;
-  Senha: string;
-  CPFouCNPJ: string;
-  IE: string;
-  Fone: string;
-  DataNascimento: string;
-}
-
-interface ApiError {
-  error: string;
-}
+import { usePostApiEcommerceUsuario } from '@/api/generated/mCNSistemas';
+import type { UsuarioEcommerceDto } from '@/api/generated/mCNSistemas.schemas';
 
 export const useRegister = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { fetchApi } = useApi();
-  const { token } = useAuth();
+  const { trigger, isMutating: isLoading } = usePostApiEcommerceUsuario();
 
-  const register = async (data: RegisterData) => {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers.Authorization = token;
-    }
-
+  const register = async (data: UsuarioEcommerceDto) => {
     try {
-      setIsLoading(true);
       setError(null);
-
-      const response = await fetch('https://pedidoexterno.mcnsistemas.net.br/api/ecommerce/usuario', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error);
-      }
-
+      await trigger(data);
       return true;
     } catch (err) {
       if (err instanceof Error) {
@@ -54,8 +20,6 @@ export const useRegister = () => {
         setError('Erro ao realizar cadastro. Tente novamente.');
       }
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 

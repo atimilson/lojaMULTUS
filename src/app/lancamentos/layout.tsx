@@ -1,3 +1,6 @@
+import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { CartProvider } from '@/contexts/CartContext';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -11,5 +14,14 @@ export default function LancamentosLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+   return (
+   <AuthProvider>
+          <CartProvider>
+            {children}
+            <WhatsAppButton />
+
+          </CartProvider>
+        </AuthProvider>
+  );
+
 } 

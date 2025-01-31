@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePromotions } from "@/hooks/usePromotions";
 import Image from "next/image";
@@ -39,53 +38,27 @@ import { Header } from "@/components/Header";
 import { Product } from "@/types/product";
 import { useSocialMedia } from "@/hooks/useSocialMedia";
 import Link from "next/link";
+import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
+import Loading from '@/components/Loading';
+import ErrorMessage from '@/components/ErrorMessage';
 
 export default function Home() {
-  const { isLoading: isAuthLoading, error: authError } = useAuth();
-  const { fetchApi } = useApi();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { promotions, isLoading: isPromotionsLoading } = usePromotions();
+  const { isLoading: isAuthLoading, error: authError, token } = useAuth();
+  const { promotions = [], isLoading: isPromotionsLoading } = usePromotions();
   const { getSocialMediaUrl, isLoading: isSocialLoading } = useSocialMedia();
 
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const data = await fetchApi("/produto/ecommerce?empresa=1&destaque=S");
-        setProducts(data);
-      } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  const { data: products = [], isLoading: apiLoading } = useGetApiProdutoEcommerce({ 
+    empresa: 1,
+    destaque: 'S'
+  });
 
-    if (!isAuthLoading && !authError) {
-      loadProducts();
-    }
-  }, [isAuthLoading, authError]);
-
-  if (isAuthLoading || isLoading || isPromotionsLoading || isSocialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+  if (isAuthLoading || isPromotionsLoading || isSocialLoading || apiLoading) {
+    return <Loading />;
   }
 
   if (authError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-red-500">
-        Erro: {authError}
-      </div>
-    );
+    return <ErrorMessage message={authError.toString()} />;
   }
-
-  // Usar diretamente as promoções convertidas
-  const promoProducts = promotions.slice(0, 8);
-
-  // Filtra produtos
-  const bestSellers = products.slice(0, 8);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -94,19 +67,49 @@ export default function Home() {
       <main className="flex-1">
         <BannerCarousel />
 
-        <ProductCarousel
-          title="Ofertas Imperdíveis"
-          products={promoProducts}
-          viewAllLink="/promocoes"
-          isPromotion={true}
-        />
+        {isPromotionsLoading ? (
+          <div className="p-6">
+            <div className="animate-pulse h-8 w-48 bg-gray-200 mb-4 rounded" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white p-4 rounded-lg shadow">
+                  <div className="animate-pulse bg-gray-200 aspect-square mb-4 rounded" />
+                  <div className="animate-pulse h-4 bg-gray-200 rounded mb-2" />
+                  <div className="animate-pulse h-4 w-2/3 bg-gray-200 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : Array.isArray(promotions) && promotions.length > 0 && (
+          <ProductCarousel
+            title="Ofertas Imperdíveis"
+            products={promotions.slice(0, 8)}
+            viewAllLink="/promocoes"
+            isPromotion={true}
+          />
+        )}
 
-        <ProductCarousel
-          title="Destaques"
-          products={bestSellers}
-          viewAllLink="/produtos"
-          isPromotion={false}
-        />
+        {apiLoading ? (
+          <div className="p-6">
+            <div className="animate-pulse h-8 w-48 bg-gray-200 mb-4 rounded" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white p-4 rounded-lg shadow">
+                  <div className="animate-pulse bg-gray-200 aspect-square mb-4 rounded" />
+                  <div className="animate-pulse h-4 bg-gray-200 rounded mb-2" />
+                  <div className="animate-pulse h-4 w-2/3 bg-gray-200 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : products.length > 0 && (
+          <ProductCarousel
+            title="Destaques"
+            products={products.slice(0, 8)}
+            viewAllLink="/produtos"
+            isPromotion={false}
+          />
+        )}
       </main>
 
       {/* Footer */}

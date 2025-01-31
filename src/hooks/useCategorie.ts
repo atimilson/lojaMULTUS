@@ -1,41 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react';
-import { useApi } from './useApi';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface Brand {
-  Codigo: number;
-  Descricao: string;
-}
+import { useGetApiEcommerceProdutoCategoria } from '@/api/generated/mCNSistemas';
+import type { ProdutoCategoriaDto } from '@/api/generated/mCNSistemas.schemas';
 
 export function useCategorie() {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
-  const { fetchApi } = useApi();
-  const [categories, setCategories] = useState<Brand[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const data = await fetchApi('ecommerce/produto/categoria');
-        const sortedBrands = data.sort((a: Brand, b: Brand) => 
-          a.Descricao.localeCompare(b.Descricao, 'pt-BR', { sensitivity: 'base' })
-        );
-        setCategories(sortedBrands);
-      } catch (err) {
-        setError('Erro ao carregar marcas');
-        console.error('Erro ao carregar marcas:', err);
-      } finally {
-        setIsLoading(false);
-      }
+  
+  const {
+    data: categories,
+    error,
+    isLoading,
+  } = useGetApiEcommerceProdutoCategoria({
+    swr: {
+      enabled: !isAuthLoading && !authError,
     }
+  });
 
-    if (!isAuthLoading && !authError) {
-        loadCategories();
-    }
-  }, [isAuthLoading, authError]);
+  const sortedCategories = categories?.sort((a: ProdutoCategoriaDto, b: ProdutoCategoriaDto) => 
+    a.Descricao?.localeCompare(b.Descricao?b.Descricao:'', 'pt-BR', { sensitivity: 'base' }) || 0
+  ) || [];
 
-  return { categories, isLoading, error };
+
+  return {
+    categories: sortedCategories,
+    isLoading,
+    error: error ? 'Erro ao carregar categorias' : null,
+  };
 } 

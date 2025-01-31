@@ -10,48 +10,28 @@ import {
   CubeIcon,
   ShoppingCartIcon,
 } from "@heroicons/react/24/outline";
-import { useState, useMemo, useEffect } from "react";
-import { Product } from "@/types/product";
-import { useApi } from "@/hooks/useApi";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
+import type { ProdutosEcommerceDto as Product } from '@/api/generated/mCNSistemas.schemas';
 import toast from "react-hot-toast";
 
 export default function ProdutosPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { fetchApi } = useApi();
-  const { token } = useAuth();
+  const { isLoading: isAuthLoading, error: authError } = useAuth();
   const { addItem } = useCart();
-
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortOrder, setSortOrder] = useState<string>("menor_preco");
 
-  useEffect(() => {
-    async function loadProducts() {
-      if (!token) {
-        setError("Usuário não autenticado");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const data = await fetchApi("/produto/ecommerce?empresa=1");
-        setProducts(data);
-      } catch (err) {
-        console.error("Erro ao carregar produtos:", err);
-        setError("Erro ao carregar produtos");
-      } finally {
-        setIsLoading(false);
-      }
+  const { data: products = [], error: apiError, isLoading } = useGetApiProdutoEcommerce({
+    empresa: 1
+  }, {
+    swr: {
+      enabled: !isAuthLoading && !authError
     }
-
-    loadProducts();
-  }, [token]);
+  });
 
   const handleAddToCart = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -63,10 +43,11 @@ export default function ProdutosPage() {
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 relative w-12 h-12">
           <Image
-            src={product.Imagens[0]?.URL || "/placeholder.jpg"}
-            alt={product.Descricao}
+            src={product.Imagens?.[0]?.URL || "/placeholder.jpg"}
+            alt={product.Descricao || ''}
             fill
             className="object-contain"
+
           />
         </div>
         <div>
@@ -103,35 +84,25 @@ export default function ProdutosPage() {
     // Aplicar filtro de preço
     filtered = filtered.filter((p) => {
       const price = p.Preco;
-      return price >= priceRange[0] && price <= priceRange[1];
+      return price && price >= priceRange[0] && price <= priceRange[1];
     });
 
     // Ordenação
     switch (sortOrder) {
       case "menor_preco":
-        filtered.sort((a, b) => a.Preco - b.Preco);
+        filtered.sort((a, b) => (a.Preco || 0) - (b.Preco || 0));
         break;
       case "maior_preco":
-        filtered.sort((a, b) => b.Preco - a.Preco);
+        filtered.sort((a, b) => (b.Preco || 0) - (a.Preco || 0));
+
         break;
       case "nome":
-        filtered.sort((a, b) => a.Descricao.localeCompare(b.Descricao));
+        filtered.sort((a, b) => a.Descricao?.localeCompare(b.Descricao || '') || 0);
         break;
     }
 
     return filtered;
   }, [products, selectedBrands, priceRange, sortOrder]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center text-red-500">
-          {error}
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -261,10 +232,11 @@ export default function ProdutosPage() {
                       `}
                       >
                         <Image
-                          src={product.Imagens[0]?.URL || "/placeholder.jpg"}
-                          alt={product.Descricao}
+                          src={product.Imagens?.[0]?.URL || "/placeholder.jpg"}
+                          alt={product.Descricao || ''}
                           fill
                           className="object-contain"
+
                         />
                       </div>
 
@@ -274,17 +246,19 @@ export default function ProdutosPage() {
                         </h3>
 
                         <div className="space-y-1">
-                          {product.PrecoPromocional > 0 && (
+                          { product.PrecoPromocional > 0 && (
                             <p className="text-gray-500 text-sm line-through">
-                              De: R$ {product.Preco.toFixed(2)}
+                              De: R$ {product.Preco?.toFixed(2) || '0.00'}
                             </p>
                           )}
+
                           <p className="text-xl font-bold text-primary">
                             R${" "}
                             {(
                               product.PrecoPromocional || product.Preco
                             ).toFixed(2)}
                           </p>
+
                         </div>
 
                         {viewMode === "list" && product.DescEcommerce && (
@@ -299,7 +273,7 @@ export default function ProdutosPage() {
                       onClick={(e) => handleAddToCart(e, product)}
                       className={`w-full mt-4 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors
                         ${
-                          product.PrecoPromocional > 0
+                           product.PrecoPromocional > 0
                             ? "bg-red-600 hover:bg-red-700 text-white"
                             : "bg-primary hover:bg-primary-dark text-white"
                         }`}

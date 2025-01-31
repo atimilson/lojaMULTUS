@@ -1,3 +1,7 @@
+import { ProdutosEcommerceDto } from '@/api/generated/mCNSistemas.schemas';
+
+export type Product = ProdutosEcommerceDto;
+
 export interface ProductImage {
   URL: string;
 }

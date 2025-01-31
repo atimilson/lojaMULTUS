@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/Header";
-import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
-import { Product } from "@/types/product";
 import { useCart } from "@/contexts/CartContext";
+import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
+import type { ProdutosEcommerceDto as Product } from '@/api/generated/mCNSistemas.schemas';
 import { toast } from "react-hot-toast";
 import {
   ListBulletIcon,
@@ -38,7 +38,6 @@ type PriceRange = {
 // Página de categoria
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
-  const { fetchApi } = useApi();
   const { addItem } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,39 +48,36 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  // Carregar produtos
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const data: Product[] = await fetchApi(`/produto/ecommerce?empresa=1&categoria=${params.slug}`);
-        
-        setProducts(data);
-        
-        // Calcular faixas de preço dinâmicas baseadas nos produtos
-        const prices = data.map(p => p.PrecoPromocional || p.Preco);
-        const minPrice = Math.min(...prices);
-        const maxPrice = Math.max(...prices);
-        const range = maxPrice - minPrice;
-        
-        const priceRanges = [
-          { min: minPrice, max: minPrice + range * 0.25, label: `Até R$ ${(minPrice + range * 0.25).toFixed(2)}` },
-          { min: minPrice + range * 0.25, max: minPrice + range * 0.5, label: `R$ ${(minPrice + range * 0.25).toFixed(2)} a R$ ${(minPrice + range * 0.5).toFixed(2)}` },
-          { min: minPrice + range * 0.5, max: minPrice + range * 0.75, label: `R$ ${(minPrice + range * 0.5).toFixed(2)} a R$ ${(minPrice + range * 0.75).toFixed(2)}` },
-          { min: minPrice + range * 0.75, max: maxPrice, label: `Acima de R$ ${(minPrice + range * 0.75).toFixed(2)}` }
-        ];
-        setSelectedPriceRanges(priceRanges);
-      } catch (err) {
-        setError('Erro ao carregar produtos');
-        console.error('Erro ao carregar produtos:', err);
-      } finally {
-        setIsLoading(false);
-      }
+  const { data: productsData = [], error: apiError, isLoading: apiLoading } = useGetApiProdutoEcommerce({
+    empresa: 1,
+    categoria: parseInt(params.slug)
+  }, {
+    swr: {
+      enabled: !isAuthLoading && !authError
     }
+  });
 
-    if (!isAuthLoading && !authError) {
-      loadProducts();
+
+  useEffect(() => {
+    if (productsData) {
+      setProducts(productsData);
+      
+      // Calcular faixas de preço dinâmicas baseadas nos produtos
+      const prices = productsData.map(p => p.PrecoPromocional || p.Preco || 0);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const range = maxPrice - minPrice;
+      
+
+      const priceRanges = [
+        { min: minPrice, max: minPrice + range * 0.25, label: `Até R$ ${(minPrice + range * 0.25).toFixed(2)}` },
+        { min: minPrice + range * 0.25, max: minPrice + range * 0.5, label: `R$ ${(minPrice + range * 0.25).toFixed(2)} a R$ ${(minPrice + range * 0.5).toFixed(2)}` },
+        { min: minPrice + range * 0.5, max: minPrice + range * 0.75, label: `R$ ${(minPrice + range * 0.5).toFixed(2)} a R$ ${(minPrice + range * 0.75).toFixed(2)}` },
+        { min: minPrice + range * 0.75, max: maxPrice, label: `Acima de R$ ${(minPrice + range * 0.75).toFixed(2)}` }
+      ];
+      setSelectedPriceRanges(priceRanges);
     }
-  }, [params.slug, isAuthLoading, authError, fetchApi]);
+  }, [productsData]);
 
   // Filtrar e ordenar produtos
   const filteredAndSortedProducts = useMemo(() => {
@@ -89,29 +85,31 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
 
     // Aplicar filtros de marca
     if (selectedBrands.length > 0) {
-      result = result.filter(p => selectedBrands.includes(p.Marca));
+      result = result.filter(p => selectedBrands.includes(p.Marca || ''));
     }
 
     // Aplicar filtros de faixa de preço
     if (selectedPriceRanges.length > 0) {
       result = result.filter(p => {
-        const price = p.PrecoPromocional || p.Preco;
+        const price = p.PrecoPromocional || p.Preco || 0;
         return selectedPriceRanges.some(range => 
           price >= range.min && price <= range.max
         );
       });
+
     }
 
     // Aplicar ordenação
     switch (sortOrder) {
       case 'menor':
-        result.sort((a, b) => (a.PrecoPromocional || a.Preco) - (b.PrecoPromocional || b.Preco));
+        result.sort((a, b) => (a.PrecoPromocional || a.Preco || 0) - (b.PrecoPromocional || b.Preco || 0));
         break;
       case 'maior':
-        result.sort((a, b) => (b.PrecoPromocional || b.Preco) - (a.PrecoPromocional || a.Preco));
+        result.sort((a, b) => (b.PrecoPromocional || b.Preco || 0) - (a.PrecoPromocional || a.Preco || 0));
         break;
       case 'nome':
-        result.sort((a, b) => a.Descricao.localeCompare(b.Descricao));
+        result.sort((a, b) => a.Descricao?.localeCompare(b.Descricao || '') || 0);
+
         break;
     }
 
@@ -157,10 +155,11 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 relative w-12 h-12">
           <Image
-            src={product.Imagens[0]?.URL || "/placeholder.jpg"}
-            alt={product.Descricao}
+            src={product.Imagens?.[0]?.URL || "/placeholder.jpg"}
+            alt={product.Descricao || ''}
             fill
             className="object-contain"
+
           />
         </div>
         <div>
@@ -171,7 +170,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     );
   };
 
-  if (isLoading || isAuthLoading) {
+  if (apiLoading || isAuthLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -249,10 +248,11 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                   <label key={brand} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedBrands.includes(brand)}
-                      onChange={() => handleBrandChange(brand)}
+                      checked={selectedBrands.includes(brand || '')}
+                      onChange={() => handleBrandChange(brand || '')}
                       className="rounded text-primary focus:ring-primary"
                     />
+
                     <span className="text-gray-700">{brand}</span>
                     <span className="text-xs text-gray-500">
                       ({products.filter(p => p.Marca === brand).length})
@@ -327,16 +327,18 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                       ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'aspect-square'}
                     `}>
                       <Image
-                        src={product.Imagens[0]?.URL || "/placeholder.jpg"}
-                        alt={product.Descricao}
+                        src={product.Imagens?.[0]?.URL || "/placeholder.jpg"}
+                        alt={product.Descricao || ''}
                         fill
                         className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+
                       />
                       {product.PrecoPromocional > 0 && (
                         <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-                          {Math.round(((product.Preco - product.PrecoPromocional) / product.Preco) * 100)}% OFF
+                          {Math.round(((product.Preco || 0 - product.PrecoPromocional || 0) / (product.Preco || 0)) * 100)}% OFF
                         </span>
                       )}
+
                     </div>
                     <div className="p-4">
                       <h3 className="font-medium text-gray-900 line-clamp-2 mb-2">
@@ -345,13 +347,15 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                       <div className="space-y-1">
                         {product.PrecoPromocional > 0 && (
                           <p className="text-sm text-gray-500 line-through">
-                            De: R$ {product.Preco.toFixed(2)}
+                            De: R$ {product.Preco?.toFixed(2) || '0.00'}
                           </p>
                         )}
+
                         <p className="text-xl font-bold text-primary">
-                          R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
+                          R$ {(product.PrecoPromocional || product.Preco || 0).toFixed(2)}
                         </p>
                       </div>
+
                     </div>
                   </Link>
                   <button

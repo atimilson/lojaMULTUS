@@ -1,44 +1,45 @@
-import { useState } from 'react';
-import { useApi } from './useApi';
-import { Product } from '@/types/product';
+'use client'
+
+import { useGetApiProdutoEcommerce, getApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
+import type { ProdutosEcommerceDto } from '@/api/generated/mCNSistemas.schemas';
 
 interface UseSearchReturn {
-  searchResults: Product[];
+  searchResults: ProdutosEcommerceDto[];
   isLoading: boolean;
   error: string | null;
-  searchProducts: (query: string) => Promise<void>;
+  searchProducts: (query: string) => void;
 }
 
 export const useSearch = (): UseSearchReturn => {
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { fetchApi } = useApi();
+  const {
+    data: searchResults,
+    error,
+    isLoading,
+    mutate
+  } = useGetApiProdutoEcommerce({ empresa: 1, busca: '' }, {
+    swr: {
+      revalidateOnFocus: false
+    }
+  });
 
-  async function searchProducts(query: string) {
+  const searchProducts = async (query: string) => {
     if (!query.trim()) {
-      setSearchResults([]);
+      mutate([], false);
       return;
     }
 
     try {
-      setIsLoading(true);
-      setError(null);
-      const data = await fetchApi(`/produto/ecommerce?empresa=1&busca=${encodeURIComponent(query)}`);
-      setSearchResults(Array.isArray(data) ? data : []);
+      const newData = await getApiProdutoEcommerce({ empresa: 1, busca: query });
+      mutate(newData);
     } catch (err) {
       console.error('Erro na busca:', err);
-      setError('Erro ao realizar a busca');
-      setSearchResults([]);
-    } finally {
-      setIsLoading(false);
     }
-  }
+  };
 
   return {
-    searchResults,
+    searchResults: searchResults || [],
     isLoading,
-    error,
+    error: error ? 'Erro ao realizar a busca' : null,
     searchProducts
   };
 }; 

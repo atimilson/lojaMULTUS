@@ -11,12 +11,12 @@ export default function BrandsPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredBrands = brands.filter(brand =>
-    brand.Descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    brand.Descricao?.toLowerCase().includes(searchTerm.toLowerCase()) || false
   );
 
   // Organiza as marcas por letra inicial
   const groupedBrands = filteredBrands.reduce((acc, brand) => {
-    const firstLetter = brand.Descricao.charAt(0).toUpperCase();
+    const firstLetter = brand.Descricao?.charAt(0).toUpperCase() || '';
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
     }
@@ -98,10 +98,11 @@ export default function BrandsPage() {
                   {letterBrands.map((brand) => (
                     <Link
                       key={brand.Codigo}
-                      href={`/marca/${encodeURIComponent(brand.Codigo)}`}
+                      href={`/marca/${encodeURIComponent(brand.Codigo || 0)}`}
                       className="block py-2 px-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
                     >
                       {brand.Descricao}
+
                     </Link>
                   ))}
                 </div>

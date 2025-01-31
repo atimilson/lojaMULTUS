@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Header } from "@/components/Header";
 import { Product } from "@/types/product";
-import { useApi } from '@/hooks/useApi';
 import { useCart } from '@/contexts/CartContext';
 import Image from "next/image";
 import Link from "next/link";
@@ -14,6 +13,7 @@ import {
   MagnifyingGlassIcon,
   ShoppingCartIcon
 } from '@heroicons/react/24/outline';
+import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
 
 // Componente de Loading
 function LoadingState() {
@@ -29,11 +29,12 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams?.get('q') || '';
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { fetchApi } = useApi();
   const { addItem } = useCart();
+
+  const { data: products = [], error, isLoading } = useGetApiProdutoEcommerce({
+    empresa: 1,
+    busca: query
+  });
 
   const handleAddToCart = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -44,34 +45,10 @@ function SearchContent() {
     alert('Produto adicionado ao carrinho!');
   };
 
-  useEffect(() => {
-    async function searchProducts() {
-      if (!query) {
-        setProducts([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await fetchApi(`/produto/ecommerce?empresa=1&busca=${encodeURIComponent(query)}`);
-        setProducts(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Erro na busca:', err);
-        setError('Erro ao realizar a busca');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    searchProducts();
-  }, [query]);
-
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center text-red-500">
-        {error}
+        {error.toString()}
       </div>
     );
   }
@@ -131,10 +108,11 @@ function SearchContent() {
                       ${viewMode === 'list' ? 'w-48 mb-0' : ''}
                     `}>
                       <Image
-                        src={product.Imagens[0]?.URL || '/placeholder.jpg'}
-                        alt={product.Descricao}
+                        src={product.Imagens?.[0]?.URL || '/placeholder.jpg'}
+                        alt={product.Descricao || ''}
                         fill
                         className="object-contain"
+
                       />
                     </div>
                   </Link>
@@ -146,15 +124,17 @@ function SearchContent() {
                       </h3>
                       
                       <div className="space-y-1">
-                        {product.PrecoPromocional > 0 && (
+                        {product.PrecoPromocional && product.PrecoPromocional > 0 && (
                           <p className="text-sm text-gray-500 line-through">
-                            R$ {product.Preco.toFixed(2)}
+                            R$ {product.Preco?.toFixed(2) || '0.00'}
                           </p>
                         )}
+
                         <p className="text-xl font-bold text-primary">
-                          R$ {(product.PrecoPromocional || product.Preco).toFixed(2)}
+                          R$ {(product.PrecoPromocional || product.Preco || 0).toFixed(2)}
                         </p>
                       </div>
+
 
                       {viewMode === 'list' && product.DescEcommerce && (
                         <p className="mt-4 text-sm text-gray-600 line-clamp-3">

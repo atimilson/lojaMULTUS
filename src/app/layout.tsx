@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`w-full ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
           <CartProvider>
@@ -39,7 +39,7 @@ export default function RootLayout({
           </CartProvider>
         </AuthProvider>
         <Toaster 
-          position="top-right"
+          position="top-center"
           toastOptions={{
             duration: 3000,
             style: {

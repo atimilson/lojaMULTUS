@@ -4,42 +4,27 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Pagination, Autoplay } from 'swiper/modules'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { useApi } from '@/hooks/useApi'
+import { useAuth } from "@/contexts/AuthContext";
+import { useGetApiEmpresaBanner } from '@/api/generated/mCNSistemas';
+import type { BannerDto as Banner } from '@/api/generated/mCNSistemas.schemas';
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
-interface Banner {
-  Tipo: string
-  Texto: string
-  URL: string
-  Link: string
-}
-
 export function BannerCarousel() {
-  const { fetchApi } = useApi()
-  const [banners, setBanners] = useState<Banner[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { isLoading: isAuthLoading, token } = useAuth();
 
-  useEffect(() => {
-    async function loadBanners() {
-      try {
-        const data = await fetchApi('empresa/banner?empresa=1')
-        setBanners(data)
-      } catch (err) {
-        setError('Erro ao carregar banners')
-        console.error('Erro ao carregar banners:', err)
-      } finally {
-        setIsLoading(false)
+  const { data: banners = [], isLoading } = useGetApiEmpresaBanner({
+    empresa: 1
+  }, {
+    swr: {
+      onSuccess: () => {
+        // lógica após sucesso se necessário
       }
     }
+  });
 
-    loadBanners()
-  }, [])
-
-  if (isLoading) {
+  if (isLoading || isAuthLoading) {
     return (
       <div className="w-full bg-gray-100" style={{ aspectRatio: '32/9' }}>
         <div className="animate-pulse w-full h-full bg-gray-200" />
@@ -47,8 +32,8 @@ export function BannerCarousel() {
     )
   }
 
-  if (error || banners.length === 0) {
-    return null // Não mostra nada se houver erro ou nenhum banner
+  if (banners.length === 0) {
+    return null // Não mostra nada se nenhum banner
   }
 
   return (
@@ -60,7 +45,7 @@ export function BannerCarousel() {
         navigation
         pagination={{ clickable: true }}
         autoplay={{ delay: 5000 }}
-        className="w-full relative"
+        className="swiper relative"
         style={{
           aspectRatio: '32/9',
         }}
@@ -71,7 +56,7 @@ export function BannerCarousel() {
               <Link href={banner.Link} className="block w-full h-full">
                 <div className="absolute inset-0">
                   <Image
-                    src={banner.URL}
+                    src={banner.URL || ''}
                     alt={banner.Texto || `Banner ${index + 1}`}
                     fill
                     sizes="100vw"
@@ -88,7 +73,7 @@ export function BannerCarousel() {
             ) : (
               <div className="absolute inset-0">
                 <Image
-                  src={banner.URL}
+                  src={banner.URL || ''}
                   alt={banner.Texto || `Banner ${index + 1}`}
                   fill
                   sizes="100vw"
