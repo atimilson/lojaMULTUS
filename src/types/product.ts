@@ -6,7 +6,7 @@ export interface ProductImage {
   URL: string;
 }
 
-export interface Product {
+export interface ProductProps {
   Contrato?: number;
   Produto: number;
   Preco: number;
