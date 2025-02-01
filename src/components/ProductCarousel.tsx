@@ -96,11 +96,10 @@ export function ProductCarousel({ title, products, viewAllLink, isPromotion }: P
               <Link href={`/produto/${product.Produto}`}>
                 <div className="relative h-48 mb-4 group-hover:scale-105 transition-transform duration-300">
                   <Image
-                    src={product.Imagens?.[0]?.URL || '/placeholder-product.jpg'}
+                    src={product?.Imagens?.[0]?.URL || '/placeholder-product.jpg'}
                     alt={product.Descricao || ''}
                     fill
                     className="object-contain"
-
                   />
                 </div>
 

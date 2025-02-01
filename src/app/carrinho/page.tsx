@@ -14,13 +14,16 @@ import {
   TruckIcon,
   TagIcon,
   ArrowRightIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 import { Header } from "@/components/Header";
+import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
+import Loading from '@/components/Loading';
 
 export default function CartPage() {
   const { isAuthenticated } = useAuth();
-  const { items, removeItem, updateQuantity, total } = useCart();
+  const { items, removeItem, updateQuantity, total, addItem } = useCart();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,6 +35,20 @@ export default function CartPage() {
   if (!isAuthenticated) {
     return null; // ou um componente de loading
   }
+
+  const { data: products = [], isLoading: apiLoading } = useGetApiProdutoEcommerce({ 
+    empresa: 1,
+    destaque: 'S'
+  });
+
+  if (apiLoading) {
+    return <Loading />;
+  }
+
+  // Filtrar produtos que não estão no carrinho
+  const relatedProducts = products.filter(
+    product => !items.some(item => item.Produto === product.Produto)
+  );
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -188,7 +205,6 @@ export default function CartPage() {
                     <span className="font-medium text-gray-900">Total</span>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">R$ {total.toFixed(2)}</p>
-                      <p className="text-sm text-gray-600">em até 10x de R$ 149,99</p>
                     </div>
                   </div>
                 </div>
@@ -214,21 +230,38 @@ export default function CartPage() {
         <div className="mt-12">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Você também pode gostar</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {featuredProducts.slice(0, 5).map((product) => (
-              <Link href={`/produto/${product.id}`} key={product.id}>
-                <div className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+            {relatedProducts.slice(0, 5).map((product) => (
+              <div key={product.Produto} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+                <Link href={`/produto/${product.Produto}`}>
                   <div className="relative aspect-square mb-4">
                     <Image
-                      src={product.image}
-                      alt={product.name}
+                      src={product?.Imagens?.[0]?.URL || '/placeholder-product.jpg'}
+                      alt={product.Descricao || ''}
                       fill
                       className="object-contain"
                     />
                   </div>
-                  <h3 className="text-sm text-gray-900 line-clamp-2 mb-2">{product.name}</h3>
-                  <p className="text-lg font-bold text-primary">R$ {product.price.toFixed(2)}</p>
-                </div>
-              </Link>
+                  <h3 className="text-sm text-gray-900 line-clamp-2 mb-2">{product.Descricao}</h3>
+                  {product.PrecoPromocional > 0 ? (
+                    <>
+                      <p className="text-sm text-gray-500 line-through">R$ {product.Preco.toFixed(2)}</p>
+                      <p className="text-lg font-bold text-red-600">R$ {product.PrecoPromocional.toFixed(2)}</p>
+                    </>
+                  ) : (
+                    <p className="text-lg font-bold text-primary">R$ {product.Preco.toFixed(2)}</p>
+                  )}
+                </Link>
+                <button
+                  onClick={() => addItem(product, 1)}
+                  className={`w-full mt-4 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors
+                    ${product.PrecoPromocional > 0 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'bg-primary hover:bg-primary-dark text-white'}`}
+                >
+                  <ShoppingCartIcon className="w-5 h-5" />
+                  Adicionar
+                </button>
+              </div>
             ))}
           </div>
         </div>

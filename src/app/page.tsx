@@ -35,7 +35,6 @@ import {
   FaWhatsapp,
 } from "react-icons/fa";
 import { Header } from "@/components/Header";
-import { Product } from "@/types/product";
 import { useSocialMedia } from "@/hooks/useSocialMedia";
 import Link from "next/link";
 import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
