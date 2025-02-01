@@ -261,11 +261,12 @@ export default function ProdutosPage() {
 
                         </div>
 
-                        {viewMode === "list" && product.DescEcommerce && (
+                        {viewMode === "list" && (product.DescEcommerce || product.Descricao) && (
                           <p className="mt-4 text-sm text-gray-600 line-clamp-3">
-                            {product.DescEcommerce}
+                            {product.DescEcommerce || product.Descricao}
                           </p>
                         )}
+
                       </div>
                     </div>
                     {/* Botão Adicionar ao Carrinho */}
