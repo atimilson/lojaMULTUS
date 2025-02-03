@@ -1708,7 +1708,7 @@ export interface ClienteDto {
 export interface BannerDto {
   Link?: string;
   Texto?: string;
-  Tipo?: string;
+  Tipo: 'desktop'|'mobile';
   URL?: string;
 }
 

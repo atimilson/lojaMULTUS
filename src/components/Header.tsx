@@ -16,7 +16,8 @@ import {
   FolderIcon,
   TagIcon,
   ChevronRightIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from 'next/navigation';
@@ -38,12 +39,14 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const { searchResults, isLoading: isSearchLoading, searchProducts } = useSearch();
-  const debouncedSearch = useDebounce(searchQuery, 300);
+  const debouncedSearch = useDebounce(searchQuery, 1000);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { categories, isLoading: isCategoriesLoading } = useCategorie();
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [searchCategory, setSearchCategory] = useState('');
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchMobileOpen, setIsSearchMobileOpen] = useState(false);
 
   const { data: empresa = [] } = useGetApiEmpresa({
     empresa: 1
@@ -92,7 +95,7 @@ export function Header() {
     } else {
       setIsSearchOpen(false);
     }
-  }, [debouncedSearch, searchProducts]);
+  }, [searchProducts]);
 
   // Fechar resultados ao clicar for
 
@@ -175,7 +178,7 @@ export function Header() {
       </div>
 
       {/* Linha principal - Logo, Busca e Ações */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white shadow-sm max-sm:hidden sm:hidden md:block">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-8 mb-[-5px]">
             {/* Logo */}
@@ -274,7 +277,7 @@ export function Header() {
       </div>
 
       {/* Linha de navegação - Marcas e Links */}
-      <nav className="bg-primary text-white">
+      <nav className="bg-primary text-white max-sm:hidden sm:hidden md:block">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
@@ -458,6 +461,144 @@ export function Header() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Header */}
+      <div className="bg-white md:hidden">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Bars3Icon className="w-6 h-6" />
+          </button>
+
+          <Link href="/" className="flex-shrink-0">
+            <Image src={`data:image/png;base64,${empresa?.[0]?.LogoMarca}`} alt="Logo" width={160} height={70} />
+          </Link>
+
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsSearchMobileOpen(!isSearchMobileOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <MagnifyingGlassIcon className="w-6 h-6" />
+            </button>
+            <Link href="/minha-conta" className="flex flex-col items-center">
+                <UserIcon className="w-6 h-6 text-gray-700" />
+              </Link>
+            <Link href="/carrinho" className="p-2 hover:bg-gray-100 rounded-lg relative">
+              <ShoppingCartIcon className="w-6 h-6" />
+              {itemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {itemsCount}
+                </span>
+              )}
+            </Link>
+
+          </div>
+        </div>
+
+        {/* Barra de Pesquisa Mobile */}
+        {isSearchMobileOpen && (
+          <div className="px-4 py-2 border-t">
+            <div className="relative">
+            <input 
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="O que você procura?"
+                      className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary text-gray-800 placeholder-gray-500"
+                    />
+               <button 
+                type="submit"
+                onClick={(e) => handleSearch(e)}
+                className="p-3 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+              >
+                <p>Pesquisar</p><MagnifyingGlassIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+        )}
+      </div>
+
+      {/* Menu Mobile Lateral */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
+          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="font-bold text-lg">Menu</h2>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <nav className="p-4">
+              <ul className="space-y-4">
+                <li>
+                  <Link 
+                    href="/minha-conta" 
+                    className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <UserIcon className="w-5 h-5" />
+                    Minha Conta
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/produtos" 
+                    className="block p-2 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Produtos
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/categorias" 
+                    className="block p-2 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Categorias
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/marcas" 
+                    className="block p-2 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Marcas
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/promocoes" 
+                    className="block p-2 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Promoções
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/lancamentos" 
+                    className="block p-2 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Lançamentos
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   );
 } 
