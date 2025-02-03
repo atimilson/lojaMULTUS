@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePostApiAutenticacaoAutenticar } from '@/api/generated/mCNSistemas';
@@ -14,12 +14,10 @@ export const useLogin = () => {
   const { setToken, setIsAuthenticated } = useAuth();
   const router = useRouter();
 
-  const { trigger, isMutating: isLoading } = usePostApiAutenticacaoAutenticar();
-
+  const { trigger, isMutating: isLoading, error: loginError, data: loginData } = usePostApiAutenticacaoAutenticar();
   const login = async (credentials: LoginCredentials) => {
     try {
       setError(null);
-
       const data = await trigger({
         Contrato: 391,
         Usuario: credentials.Usuario,
@@ -36,13 +34,14 @@ export const useLogin = () => {
         router.push(returnTo || '/minha-conta/usuario');
         return true;
       }
-
+      setError(loginData?.error || 'Erro ao fazer login');
       return false;
     } catch (err) {
-      console.error('Erro no login:', err);
-      setError('E-mail ou senha inválidos');
+      setError(loginData?.error || 'Erro ao fazer login');
       return false;
     }
+    
+
   };
 
   return { login, isLoading, error };

@@ -163,9 +163,9 @@ export default function LoginPage() {
       Senha: loginData.password,
     });
   };
-
   return (
     <div className="flex-1 bg-gray-50">
+
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-3">
           <nav className="text-sm">

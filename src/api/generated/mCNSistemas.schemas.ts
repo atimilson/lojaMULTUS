@@ -765,6 +765,7 @@ export interface TokenContratoAgrupadooDto {
  */
 export interface TokenAutenticacaoDto {
   Token?: string;
+  error?: string;
 }
 
 /**
@@ -1719,5 +1720,6 @@ export interface AutenticacaoDto {
   Contrato?: number;
   Senha?: string;
   Usuario?: string;
+  error?: string;
 }
 
