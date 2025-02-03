@@ -275,6 +275,39 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
           </div>
         </div>
 
+        {/* Especificações Técnicas */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Especificações Técnicas
+            </h2>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Dimensões (C x L x E)</span>
+                  <span className="font-medium">{`${product.Comprimento || 0} x ${product.Largua || 0} x ${product.Espessura || 0} cm`}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Peso</span>
+                  <span className="font-medium">{`${product.Peso || 0} kg`}</span>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Volume</span>
+                  <span className="font-medium">{`${product.Volume || 0} L`}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Volume em M³</span>
+                  <span className="font-medium">{`${product.TotalM3 || 0} m³`}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Produtos Relacionados */}
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">

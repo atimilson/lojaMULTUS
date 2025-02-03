@@ -911,17 +911,24 @@ export interface ProdutosEmPromocaoEcommerceDto {
  */
 export interface ProdutosEcommerceDto {
   Categoria?: string;
+  Comprimento?: number;
+  Cor?: string;
   DescEcommerce?: string;
   Descricao?: string;
+  Espessura?: number;
   Estoque?: number;
   Grupo?: string;
   Imagens?: ProdutoImagemDto[];
+  Largua?: number;
   Marca?: string;
   Observacao?: string;
+  Peso?: number;
   Preco: number;
   PrecoPromocional: number;
   Produto: number;
   SubGrupo?: string;
+  TotalM3?: number;
+  Volume?: string;
 }
 
 /**
