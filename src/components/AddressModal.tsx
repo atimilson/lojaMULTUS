@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import InputMask from 'react-input-mask';
-import { UsuarioEcommerceEnderecoDto } from '@/api/generated/mCNSistemas';
+import { UsuarioEcommerceEnderecoDto } from '@/api/generated/mCNSistemas.schemas';
 
 const addressSchema = z.object({
   Nome: z.string().min(3, 'Nome é obrigatório'),
