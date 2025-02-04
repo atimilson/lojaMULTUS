@@ -187,7 +187,24 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
               </div>
 
               {/* Calculadora de Frete */}
-              <ShippingCalculator productId={product.Produto || 0} />
+              <ShippingCalculator items={[{
+                Produto: product.Produto,
+                Descricao: product.Descricao,
+                Quantidade: quantity,
+                Preco: product.Preco,
+                PrecoPromocional: product.PrecoPromocional,
+                Espessura: product.Espessura || 0,
+                Comprimento: product.Comprimento || 0,
+                Peso: product.Peso || 0,
+                Volume: product.Volume || 0,
+                Imagens: product.Imagens
+
+
+              }]} total={product.PrecoPromocional || product.Preco || 0}
+                onSelectShipping={() => {}}
+                selectedShipping={null}
+                /> 
+
 
 
               {/* Quantidade e Botões */}

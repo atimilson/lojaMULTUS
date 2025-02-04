@@ -7,8 +7,16 @@ interface CartItem {
   Quantidade: number;
   Preco: number;
   PrecoPromocional: number;
+  Cor: string;
+  Largua: number;
+  Espessura: number;
+  TotalM3: number;
+  Comprimento: number;
+  Peso: number;
+  Volume: string;
   Imagens: { URL: string }[];
 }
+
 
 interface CartContextData {
   items: CartItem[];
@@ -56,6 +64,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         Quantidade: quantity,
         Preco: product.Preco,
         PrecoPromocional: product.PrecoPromocional,
+        Cor: product.Cor,
+        Largua: product.Largua,
+        Espessura: product.Espessura,
+        TotalM3: product.TotalM3,
+        Comprimento: product.Comprimento,
+        Peso: product.Peso,
+        Volume: product.Volume,
         Imagens: product.Imagens
       }];
     });
