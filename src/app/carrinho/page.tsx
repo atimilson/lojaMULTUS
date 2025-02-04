@@ -15,11 +15,21 @@ import {
   TagIcon,
   ArrowRightIcon,
   ShieldCheckIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  PrinterIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 import { Header } from "@/components/Header";
-import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
+import { useGetApiEmpresa, useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
 import Loading from '@/components/Loading';
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
+import { useSocialMedia } from '@/hooks/useSocialMedia';
+
+// Adicionar a tipagem
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: typeof autoTable;
+}
 
 export default function CartPage() {
   const { isAuthenticated } = useAuth();
@@ -41,6 +51,12 @@ export default function CartPage() {
     destaque: 'S'
   });
 
+  const { getSocialMediaUrl, isLoading: isSocialLoading } = useSocialMedia();
+
+  const { data: empresa = [] } = useGetApiEmpresa({
+    empresa: 1
+  });
+
   if (apiLoading) {
     return <Loading />;
   }
@@ -49,6 +65,196 @@ export default function CartPage() {
   const relatedProducts = products.filter(
     product => !items.some(item => item.Produto === product.Produto)
   );
+
+  // Função para imprimir carrinho
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    printWindow?.document.writeln(`
+      <html>
+        <head>
+          <title>Carrinho de Compras - ${empresa[0]?.Fantasia || 'Loja'}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              padding: 20px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            .header {
+              text-align: center;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #eee;
+              margin-bottom: 20px;
+            }
+            .logo {
+              max-width: 200px;
+              margin-bottom: 10px;
+            }
+            .company-info {
+              font-size: 14px;
+              color: #666;
+              margin-bottom: 20px;
+            }
+            .item { 
+              padding: 15px;
+              border-bottom: 1px solid #eee;
+              margin-bottom: 10px;
+            }
+            .item h3 {
+              margin: 0 0 10px 0;
+              color: #333;
+            }
+            .total { 
+              margin-top: 20px;
+              padding-top: 20px;
+              border-top: 2px solid #eee;
+              font-weight: bold;
+              font-size: 18px;
+              text-align: right;
+            }
+            .date {
+              text-align: right;
+              font-size: 12px;
+              color: #666;
+              margin-bottom: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            ${empresa[0]?.LogoMarca ? 
+              `<img src="data:image/png;base64,${empresa[0].LogoMarca}" class="logo" alt="${empresa[0].Fantasia}"/>` 
+              : ''
+            }
+
+
+            <h3>${empresa[0]?.Fantasia || 'Loja'}</h3>
+            <div class="company-info">
+              ${empresa[0]?.Endereco ? `${empresa[0].Endereco}, ` : ''}
+              ${empresa[0]?.Numero ? `${empresa[0].Numero}` : ''}<br/>
+              ${empresa[0]?.Cidade ? `${empresa[0].Cidade} - ` : ''}
+              ${empresa[0]?.UF || ''}<br/>
+              ${empresa[0]?.Fone1 ? `Tel: ${empresa[0].Fone1}` : ''}
+            </div>
+          </div>
+
+          <div class="date">
+            Data: ${new Date().toLocaleDateString()}
+          </div>
+
+          <h2>Itens do Pedido</h2>
+          <div class="items">
+            ${items.map(item => `
+              <div class="item">
+                <h3>${item.Descricao}</h3>
+                <p>Quantidade: ${item.Quantidade}</p>
+                <p>Preço: R$ ${(item.PrecoPromocional || item.Preco || 0).toFixed(2)}</p>
+                <p>Subtotal: R$ ${((item.PrecoPromocional || item.Preco || 0) * item.Quantidade).toFixed(2)}</p>
+              </div>
+            `).join('')}
+          </div>
+          <div class="total">
+            Total: R$ ${total.toFixed(2)}
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow?.document.close();
+    printWindow?.print();
+  };
+
+  // Função para enviar pedido via WhatsApp
+  const handleWhatsApp = async () => {
+    // Criar um elemento temporário para renderizar o conteúdo
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; width: 600px; background: white;">
+        <div style="text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
+          ${empresa[0]?.LogoMarca ? 
+            `<img src="data:image/png;base64,${empresa[0].LogoMarca}" style="max-width: 200px; margin-bottom: 10px;" />` 
+            : ''
+          }
+          <h3 style="margin: 10px 0;">${empresa[0]?.Fantasia || 'Loja'}</h3>
+          <div style="font-size: 14px; color: #666;">
+            ${empresa[0]?.Endereco ? `${empresa[0].Endereco}, ` : ''}
+            ${empresa[0]?.Numero ? `${empresa[0].Numero}` : ''}<br/>
+            ${empresa[0]?.Cidade ? `${empresa[0].Cidade} - ` : ''}
+            ${empresa[0]?.UF || ''}<br/>
+            ${empresa[0]?.Fone1 ? `Tel: ${empresa[0].Fone1}` : ''}
+          </div>
+        </div>
+
+        <div style="text-align: right; font-size: 12px; color: #666; margin-bottom: 20px;">
+          Data: ${new Date().toLocaleDateString()}
+        </div>
+
+        <h2 style="margin-bottom: 15px;">Itens do Pedido</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="background: #f8f8f8;">
+              <th style="padding: 10px; text-align: left; border: 1px solid #eee;">Produto</th>
+              <th style="padding: 10px; text-align: center; border: 1px solid #eee;">Qtd</th>
+              <th style="padding: 10px; text-align: right; border: 1px solid #eee;">Preço</th>
+              <th style="padding: 10px; text-align: right; border: 1px solid #eee;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td style="padding: 10px; border: 1px solid #eee;">${item.Descricao}</td>
+                <td style="padding: 10px; text-align: center; border: 1px solid #eee;">${item.Quantidade}</td>
+                <td style="padding: 10px; text-align: right; border: 1px solid #eee;">R$ ${(item.PrecoPromocional || item.Preco || 0).toFixed(2)}</td>
+                <td style="padding: 10px; text-align: right; border: 1px solid #eee;">R$ ${((item.PrecoPromocional || item.Preco || 0) * item.Quantidade).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: bold;">
+              <td colspan="3" style="padding: 10px; text-align: right; border: 1px solid #eee;">Total:</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #eee;">R$ ${total.toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+
+    document.body.appendChild(tempDiv);
+
+    // Usar html2canvas para converter o HTML em imagem
+    const canvas = await import('html2canvas').then(html2canvas => 
+      html2canvas.default(tempDiv, {
+        scale: 2,
+        backgroundColor: '#ffffff'
+      })
+    );
+
+    document.body.removeChild(tempDiv);
+
+    // Converter canvas para blob e criar URL para download
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return;
+
+    // Criar link de download
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(blob as Blob);
+    downloadLink.download = 'pedido.png';
+    downloadLink.click();
+
+    // Criar mensagem apenas com os itens
+    const message = `*Novo Pedido*\n\n${items.map(item => `
+*${item.Descricao}*
+Quantidade: ${item.Quantidade}
+Preço: R$ ${(item.PrecoPromocional || item.Preco || 0).toFixed(2)}
+Subtotal: R$ ${((item.PrecoPromocional || item.Preco || 0) * item.Quantidade).toFixed(2)}
+    `).join('\n')}\n\n*Total: R$ ${total.toFixed(2)}*\n\nA imagem do pedido foi baixada automaticamente.`;
+
+    // Enviar para WhatsApp
+    const whatsappUrl = `https://wa.me/5565981170765?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
+    // Limpar URL após download
+    setTimeout(() => URL.revokeObjectURL(downloadLink.href), 1000);
+  };
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -210,10 +416,35 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button className="w-full mt-6 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2">
-                Finalizar Compra
-                <ArrowRightIcon className="w-4 h-4" />
-              </button>
+              <div className="flex flex-col gap-4 mt-4">
+                {/* Botão Finalizar Compra PagBank */}
+                <button 
+                  className="w-full px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
+                >
+                  Finalizar Compra
+                  <ArrowRightIcon className="w-4 h-4" />
+                </button>
+
+                {/* Botões de Impressão e WhatsApp */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={()=>handlePrint()}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  >
+                    <PrinterIcon className="w-5 h-5" />
+
+                    Imprimir Carrinho
+                  </button>
+
+                  <button
+                    onClick={handleWhatsApp}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    <PhoneIcon className="w-5 h-5" />
+                    Finalizar via WhatsApp
+                  </button>
+                </div>
+              </div>
 
               {/* Garantias */}
               <div className="mt-6 pt-6 border-t border-gray-100">

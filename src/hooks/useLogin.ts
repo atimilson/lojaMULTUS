@@ -11,10 +11,11 @@ interface LoginCredentials {
 
 export const useLogin = () => {
   const [error, setError] = useState<string | null>(null);
-  const { setToken, setIsAuthenticated } = useAuth();
+  const { setToken, setIsAuthenticated, setUsuario } = useAuth();
   const router = useRouter();
 
   const { trigger, isMutating: isLoading, error: loginError, data: loginData } = usePostApiAutenticacaoAutenticar();
+
   const login = async (credentials: LoginCredentials) => {
     try {
       setError(null);
@@ -25,8 +26,13 @@ export const useLogin = () => {
       } as AutenticacaoDto);
 
       if (data.Token) {
+        // Salvar token no cookie e localStorage
+        document.cookie = `token=${data.Token}; path=/; max-age=86400; SameSite=Strict; Secure`;
+        localStorage.setItem('token', data.Token);
+        
         setToken(data.Token);
         setIsAuthenticated(true);
+        setUsuario(credentials.Usuario);
         
         const params = new URLSearchParams(window.location.search);
         const returnTo = params.get('returnTo');
@@ -40,8 +46,6 @@ export const useLogin = () => {
       setError(loginData?.error || 'Erro ao fazer login');
       return false;
     }
-    
-
   };
 
   return { login, isLoading, error };

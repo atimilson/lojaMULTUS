@@ -1,29 +1,45 @@
 "use client"
+// import { cookies } from 'next/headers';
 import { createContext, useContext, useState, useEffect, SetStateAction } from 'react';
 
 interface AuthContextData {
   token: string | null;
+  usuario: string | null;
   setToken: (value: SetStateAction<string | null>) => void;
+  setUsuario: (value: SetStateAction<string | null>) => void;
   isLoading: boolean;
   error: string | null;
   logout: () => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
+
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
+  const [usuario, setUsuario] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+
   const logout = async() => {
+    // Limpar estados
     setToken(null);
     setIsAuthenticated(false);
-    await authenticate()
+    setUsuario(null);
+    
+    // Limpar localStorage
+    localStorage.removeItem('token');
+    
+    // Limpar cookie
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure';
+    
+    await authenticate();
   };
+
 
   async function authenticate() {
     try {
@@ -60,12 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
+      usuario,
+      setUsuario,
       token, 
       setToken, 
       isLoading, 
       error, 
       logout,
       isAuthenticated,
+
       setIsAuthenticated 
     }}>
       {children}

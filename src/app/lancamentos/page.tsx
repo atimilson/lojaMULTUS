@@ -22,6 +22,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useGetApiProdutoEcommerceNovos } from "@/api/generated/mCNSistemas";
 import type { ProdutosEcommerceDto as Product } from "@/api/generated/mCNSistemas.schemas";
+import { FilterSidebar } from "@/components/FilterSidebar";
 
 export default function LancamentosPage() {
   // Estados
@@ -30,11 +31,9 @@ export default function LancamentosPage() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [sortOrder, setSortOrder] = useState<"menor_preco" | "maior_preco" | "nome">("menor_preco");
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<
-    "relevancia" | "menor" | "maior" | "nome"
-  >("relevancia");
 
   // Hooks
   const { isLoading: isAuthLoading, error: authError } = useAuth();
@@ -64,55 +63,67 @@ export default function LancamentosPage() {
 
   // Extrair marcas e categorias únicas
   const brands = useMemo(() => {
-    return Array.from(new Set(products.map((p) => p.Marca))).sort();
+    return Array.from(new Set(products
+      .map(p => p.Marca)
+      .filter((brand): brand is string => !!brand)
+    )).sort();
   }, [products]);
 
   const categories = useMemo(() => {
     return Array.from(new Set(products.map((p) => p.Categoria))).sort();
   }, [products]);
 
-  // Filtrar e ordenar produtos
-  const filteredAndSortedProducts = useMemo(() => {
-    let result = [...products];
+  // Filtrar produtos
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
 
     // Aplicar filtros de marca
     if (selectedBrands.length > 0) {
-      result = result.filter((p) => selectedBrands.includes(p.Marca || ""));
+      filtered = filtered.filter(p => selectedBrands.includes(p.Marca || ''));
     }
 
-    // Aplicar filtros de categoria
-    if (selectedCategories.length > 0) {
-      result = result.filter((p) =>
-        selectedCategories.includes(p.Categoria || "")
-      );
-    }
+    // Aplicar filtro de preço
+    filtered = filtered.filter(p => {
+      const price = p.PrecoPromocional || p.Preco || 0;
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
 
-    // Aplicar ordenação
+    // Ordenação
     switch (sortOrder) {
-      case "menor":
-        result.sort(
-          (a, b) =>
-            (a.PrecoPromocional || a.Preco || 0) -
-            (b.PrecoPromocional || b.Preco || 0)
-        );
+      case "menor_preco":
+        filtered.sort((a, b) => {
+          const priceA = a.PrecoPromocional || a.Preco || 0;
+          const priceB = b.PrecoPromocional || b.Preco || 0;
+          return priceA - priceB;
+        });
         break;
-      case "maior":
-        result.sort(
-          (a, b) =>
-            (b.PrecoPromocional || b.Preco || 0) -
-            (a.PrecoPromocional || a.Preco || 0)
-        );
+      case "maior_preco":
+        filtered.sort((a, b) => {
+          const priceA = a.PrecoPromocional || a.Preco || 0;
+          const priceB = b.PrecoPromocional || b.Preco || 0;
+          return priceB - priceA;
+        });
         break;
       case "nome":
-        result.sort(
-          (a, b) => a.Descricao?.localeCompare(b.Descricao || "") || 0
-        );
-
+        filtered.sort((a, b) => a.Descricao?.localeCompare(b.Descricao || '') || 0);
         break;
     }
 
-    return result;
-  }, [products, selectedBrands, selectedCategories, sortOrder]);
+    return filtered;
+  }, [products, selectedBrands, priceRange, sortOrder]);
+
+  const handleBrandChange = (brand: string) => {
+    setSelectedBrands(prev => 
+      prev.includes(brand) 
+        ? prev.filter(b => b !== brand)
+        : [...prev, brand]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedBrands([]);
+    setPriceRange([0, 5000]);
+  };
 
   // Adicionar ao carrinho
   const handleAddToCart = (
@@ -160,7 +171,7 @@ export default function LancamentosPage() {
             fill
             className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
           />
-          {/* {product.PrecoPromocional && product.PrecoPromocional > 0 && (
+          {product.PrecoPromocional > 0 && (
             <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
               {Math.round(
                 ((product.Preco || 0 - product.PrecoPromocional || 0) /
@@ -169,7 +180,7 @@ export default function LancamentosPage() {
               )}
               % OFF
             </span>
-          )} */}
+          )}
         </div>
 
         <div className={`p-4 ${viewMode === "list" ? "flex-1" : ""}`}>
@@ -277,73 +288,15 @@ export default function LancamentosPage() {
 
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filtros Laterais */}
-            <div className="w-full lg:w-64 space-y-6">
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-800">
-                    <FunnelIcon className="w-5 h-5 text-primary" />
-                    Filtros
-                  </h3>
-                </div>
-
-                {/* Marcas */}
-                <div className="mb-6">
-                  <h4 className="font-medium mb-3 text-gray-700">Marcas</h4>
-                  <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                    {brands.map((brand) => (
-                      <label
-                        key={brand}
-                        className="flex items-center gap-2 hover:bg-primary/5 p-2 rounded-lg transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand || "")}
-                          onChange={() => {
-                            setSelectedBrands((prev) =>
-                              prev.includes(brand || "")
-                                ? prev.filter((b) => b !== brand || "")
-                                : [...prev, brand || ""]
-                            );
-                          }}
-                          className="rounded text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm text-gray-600">{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Categorias */}
-                <div className="mb-6">
-                  <h4 className="font-medium mb-3 text-gray-700">Categorias</h4>
-                  <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                    {categories.map((category) => (
-                      <label
-                        key={category}
-                        className="flex items-center gap-2 hover:bg-primary/5 p-2 rounded-lg transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category || "")}
-                          onChange={() => {
-                            setSelectedCategories((prev) =>
-                              prev.includes(category || "")
-                                ? prev.filter((c) => c !== category || "")
-                                : [...prev, category || ""]
-                            );
-                          }}
-                          className="rounded text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm text-gray-600">
-                          {category}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Substituir os filtros existentes pelo FilterSidebar */}
+            <FilterSidebar
+              brands={brands}
+              selectedBrands={selectedBrands}
+              onBrandChange={handleBrandChange}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              clearFilters={clearFilters}
+            />
 
             {/* Lista de Produtos */}
             <div className="flex-1">
@@ -372,7 +325,7 @@ export default function LancamentosPage() {
                       <ListBulletIcon className="w-5 h-5" />
                     </button>
                     <span className="text-sm text-gray-600 font-medium">
-                      {filteredAndSortedProducts.length} produtos encontrados
+                      {filteredProducts.length} produtos encontrados
                     </span>
                   </div>
                   <select
@@ -382,9 +335,8 @@ export default function LancamentosPage() {
                     }
                     className="p-2 border rounded-lg text-sm bg-white hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   >
-                    <option value="relevancia">Mais Relevantes</option>
-                    <option value="menor">Menor Preço</option>
-                    <option value="maior">Maior Preço</option>
+                    <option value="menor_preco">Menor Preço</option>
+                    <option value="maior_preco">Maior Preço</option>
                     <option value="nome">Nome</option>
                   </select>
                 </div>
@@ -398,13 +350,13 @@ export default function LancamentosPage() {
                     : "space-y-4"
                 }
               >
-                {filteredAndSortedProducts.map((product) => (
+                {filteredProducts.map((product) => (
                   <ProductCard key={product.Produto} {...product} />
                 ))}
               </div>
 
               {/* Estado Vazio */}
-              {filteredAndSortedProducts.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-gray-100">
                   <div className="mb-4">
                     <CubeIcon className="w-12 h-12 mx-auto text-gray-400" />
@@ -413,10 +365,7 @@ export default function LancamentosPage() {
                     Nenhum produto encontrado com os filtros selecionados
                   </p>
                   <button
-                    onClick={() => {
-                      setSelectedBrands([]);
-                      setSelectedCategories([]);
-                    }}
+                    onClick={clearFilters}
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
                   >
                     Limpar filtros

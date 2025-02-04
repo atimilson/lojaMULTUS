@@ -21,6 +21,7 @@ import {
   ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 import { toast } from "react-hot-toast";
+import { FilterSidebar } from '@/components/FilterSidebar';
 
 type SortOption = 'relevancia' | 'menor' | 'maior' | 'nome' | 'mais_vendidos';
 
@@ -29,6 +30,9 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
   const { addItem } = useCart();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([params.slug]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [sortOrder, setSortOrder] = useState<'menor_preco' | 'maior_preco' | 'nome'>('menor_preco');
 
   const { data: products = [], error: apiError, isLoading } = useGetApiProdutoEcommerce({
     empresa: 1,
@@ -44,12 +48,59 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
     return Array.from(new Set(products.map(p => p.Categoria)));
   }, [products]);
 
+  // Extrair marcas únicas
+  const brands = useMemo(() => {
+    if (!products.length) return [];
+    const brandSet = new Set(
+      products.map((p) => p.Marca).filter((brand): brand is string => !!brand)
+    );
+    return Array.from(brandSet);
+  }, [products]);
+
+  // Filtrar produtos
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
+
+    // Aplicar filtro de preço
+    filtered = filtered.filter((p) => {
+      const price = p.PrecoPromocional || p.Preco;
+      return price && price >= priceRange[0] && price <= priceRange[1];
+    });
+
+    // Ordenação
+    switch (sortOrder) {
+      case "menor_preco":
+        filtered.sort((a, b) => {
+          const priceA = a.PrecoPromocional || a.Preco || 0;
+          const priceB = b.PrecoPromocional || b.Preco || 0;
+          return priceA - priceB;
+        });
+        break;
+      case "maior_preco":
+        filtered.sort((a, b) => {
+          const priceA = a.PrecoPromocional || a.Preco || 0;
+          const priceB = b.PrecoPromocional || b.Preco || 0;
+          return priceB - priceA;
+        });
+        break;
+      case "nome":
+        filtered.sort((a, b) => a.Descricao?.localeCompare(b.Descricao || '') || 0);
+        break;
+    }
+
+    return filtered;
+  }, [products, priceRange, sortOrder]);
+
   const handleCategoryChange = (categoria: string) => {
     // Implementation of handleCategoryChange
   };
 
+  const handleBrandChange = (brand: string) => {
+    setSelectedBrands([brand]); // Mantém apenas uma marca selecionada
+  };
+
   const clearFilters = () => {
-    // Implementation of clearFilters
+    setPriceRange([0, 5000]);
   };
 
   // Adicione a função de adicionar ao carrinho
@@ -90,258 +141,200 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
   const brandName = products[0]?.Marca || 'Marca';
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      
-      {/* Breadcrumb e Cabeçalho */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <nav className="text-sm text-gray-500 mb-4">
-            <ol className="flex items-center gap-2">
-              <li><Link href="/" className="hover:text-primary">Home</Link></li>
-              <span>/</span>
-              <li><Link href="/marcas" className="hover:text-primary">Marcas</Link></li>
-              <span>/</span>
-              <li className="text-gray-900 font-medium">{brandName}</li>
-            </ol>
-          </nav>
-          
-          <h1 className="text-2xl font-bold text-gray-900">{brandName}</h1>
-          <p className="text-gray-600 mt-2">
-            {products.length} produtos encontrados
-          </p>
-        </div>
-      </div>
+      <main className="flex-1 bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Filtros */}
+            <FilterSidebar
+              brands={brands}
+              selectedBrands={selectedBrands}
+              onBrandChange={handleBrandChange}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              clearFilters={clearFilters}
+            />
 
-      {/* Conteúdo principal */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Botão de filtros mobile */}
-        <button
-          className="md:hidden w-full mb-4 flex items-center justify-center gap-2 bg-white p-3 rounded-lg shadow"
-          onClick={() => setIsMobileFiltersOpen(true)}
-        >
-          <AdjustmentsHorizontalIcon className="w-5 h-5" />
-          Filtros e Ordenação
-        </button>
-
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Sidebar de Filtros */}
-          <div className={`
-            md:w-64 flex-shrink-0
-            ${isMobileFiltersOpen 
-              ? 'fixed inset-0 z-50 bg-white p-4 overflow-y-auto' 
-              : 'hidden md:block'}
-          `}>
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold flex items-center text-gray-700 gap-2">
-                  <FunnelIcon className="w-5 h-5" />
-                  Filtros
-                </h3>
-                {/* Implementation of clearFilters button */}
-              </div>
-
-              {/* Categorias */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-2 text-gray-700">Categorias</h4>
-                <div className="space-y-2">
-                  {categories.map((categoria) => (
-                    <label key={categoria} className="flex items-center gap-2">
-                      <input 
-                        type="checkbox"
-                        checked={false}
-                        onChange={() => handleCategoryChange(categoria || '')}
-                        className="rounded text-primary"
-                      />
-                      <span className="text-sm text-gray-700">{categoria}</span>
-                    </label>
-                  ))}
+            {/* Lista de Produtos */}
+            <div className="flex-1">
+              {/* Breadcrumb e Cabeçalho */}
+              <div className="bg-white border-b">
+                <div className="container mx-auto px-4 py-4">
+                  <nav className="text-sm text-gray-500 mb-4">
+                    <ol className="flex items-center gap-2">
+                      <li><Link href="/" className="hover:text-primary">Home</Link></li>
+                      <span>/</span>
+                      <li><Link href="/marcas" className="hover:text-primary">Marcas</Link></li>
+                      <span>/</span>
+                      <li className="text-gray-900 font-medium">{brandName}</li>
+                    </ol>
+                  </nav>
+                  
+                  <h1 className="text-2xl font-bold text-gray-900">{brandName}</h1>
+                  <p className="text-gray-600 mt-2">
+                    {products.length} produtos encontrados
+                  </p>
                 </div>
               </div>
 
-              {/* Preço */}
-              <div className="border-t pt-4 mt-4">
-                <h4 className="font-medium mb-2 text-gray-700">Faixa de Preço</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>R$ {0}</span>
-                    <span>R$ {0}</span>
+              {/* Botão de filtros mobile */}
+             
+              {/* Cabeçalho da lista */}
+              <div className="bg-white rounded-lg shadow p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100' : ''}`}
+                    >
+                      <Squares2X2Icon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100' : ''}`}
+                    >
+                      <ListBulletIcon className="w-5 h-5" />
+                    </button>
                   </div>
-                  <input 
-                    type="range"
-                    min={0}
-                    max={0}
-                    value={0}
-                    onChange={(e) => {
-                      /* Implementation of setCurrentPriceFilter */
-                    }}
-                    className="w-full accent-primary"
-                  />
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Ordenar por:</span>
+                    <select 
+                      className="text-sm border rounded-lg px-2 py-1"
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as 'menor_preco' | 'maior_preco' | 'nome')}
+                    >
+                      <option value="menor_preco">Menor Preço</option>
+                      <option value="maior_preco">Maior Preço</option>
+                      <option value="nome">Nome</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Lista de produtos */}
-          <div className="flex-1">
-            {/* Cabeçalho da lista */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100' : ''}`}
+              {/* Grid/Lista de produtos */}
+              <div className={
+                viewMode === 'grid'
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  : "space-y-4"
+              }>
+                {filteredProducts.map((product) => (
+                  <div 
+                    key={product.Produto}
+                    className={`
+                      bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300
+                      ${viewMode === 'list' ? 'block' : ''}
+                    `}
                   >
-                    <Squares2X2Icon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100' : ''}`}
-                  >
-                    <ListBulletIcon className="w-5 h-5" />
-                  </button>
-                </div>
+                    <Link
+                      href={`/produto/${product.Produto}`}
+                      className={`block ${viewMode === 'list' ? 'flex gap-6' : ''}`}
+                    >
+                      <div className={`
+                        relative group
+                        ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'aspect-square'}
+                      `}>
+                        <Image
+                          src={product.Imagens?.[0]?.URL || "/placeholder.jpg"}
+                          alt={product.Descricao || ''}
+                          fill
+                          className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Ordenar por:</span>
-                  <select 
-                    className="text-sm border rounded-lg px-2 py-1"
-                    value={0}
-                    onChange={(e) => {
-                      /* Implementation of setSortOrder */
-                    }}
-                  >
-                    <option value="relevancia">Mais Relevantes</option>
-                    <option value="menor">Menor Preço</option>
-                    <option value="maior">Maior Preço</option>
-                    <option value="nome">Nome</option>
-                    <option value="mais_vendidos">Mais Vendidos</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+                        />
+                        {product.PrecoPromocional > 0 && (
+                          <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            {Math.round(((product.Preco || 0 - product.PrecoPromocional || 0) / (product.Preco || 0)) * 100)}% OFF
+                          </span>
+                        )}
 
-            {/* Grid/Lista de produtos */}
-            <div className={
-              viewMode === 'grid'
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                : "space-y-4"
-            }>
-              {products.map((product) => (
-                <div 
-                  key={product.Produto}
-                  className={`
-                    bg-white rounded-lg shadow hover:shadow-lg transition-all duration-300
-                    ${viewMode === 'list' ? 'block' : ''}
-                  `}
-                >
-                  <Link
-                    href={`/produto/${product.Produto}`}
-                    className={`block ${viewMode === 'list' ? 'flex gap-6' : ''}`}
-                  >
-                    <div className={`
-                      relative group
-                      ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'aspect-square'}
-                    `}>
-                      <Image
-                        src={product.Imagens?.[0]?.URL || "/placeholder.jpg"}
-                        alt={product.Descricao || ''}
-                        fill
-                        className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                      </div>
 
-                      />
-                      {product.PrecoPromocional > 0 && (
-                        <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                          {Math.round(((product.Preco || 0 - product.PrecoPromocional || 0) / (product.Preco || 0)) * 100)}% OFF
-                        </span>
-                      )}
-
-                    </div>
-
-                    <div className={`
-                      p-4 flex flex-col
-                      ${viewMode === 'list' ? 'flex-1' : ''}
-                    `}>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 hover:text-primary transition-colors">
-                          {product.Descricao}
-                        </h3>
-                        
-                        <div className="space-y-1 mb-4">
-                          {  product.PrecoPromocional > 0 ? (
-                            <>
-                              <p className="text-sm text-gray-500 line-through">
-                                De: R$ {product.Preco?.toFixed(2) || '0.00'}
+                      <div className={`
+                        p-4 flex flex-col
+                        ${viewMode === 'list' ? 'flex-1' : ''}
+                      `}>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 hover:text-primary transition-colors">
+                            {product.Descricao}
+                          </h3>
+                          
+                          <div className="space-y-1 mb-4">
+                            {  product.PrecoPromocional > 0 ? (
+                              <>
+                                <p className="text-sm text-gray-500 line-through">
+                                  De: R$ {product.Preco?.toFixed(2) || '0.00'}
+                                </p>
+                                <p className="text-xl font-bold text-red-600">
+                                  Por: R$ {product.PrecoPromocional?.toFixed(2) || '0.00'}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-xl font-bold text-primary">
+                                R$ {product.Preco?.toFixed(2) || '0.00'}
                               </p>
-                              <p className="text-xl font-bold text-red-600">
-                                Por: R$ {product.PrecoPromocional?.toFixed(2) || '0.00'}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-xl font-bold text-primary">
-                              R$ {product.Preco?.toFixed(2) || '0.00'}
+                            )}
+                          </div>
+
+                          {viewMode === 'list' &&  (
+                            <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                              {product.DescEcommerce? product.DescEcommerce : product.Observacao}
                             </p>
                           )}
                         </div>
 
-                        {viewMode === 'list' &&  (
-                          <p className="text-sm text-gray-600 line-clamp-3 mb-4">
-                            {product.DescEcommerce? product.DescEcommerce : product.Observacao}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Informações adicionais
-                      <div className="space-y-2 text-sm text-gray-500 mb-4">
-                        <p className="flex items-center gap-1">
-                          <BuildingStorefrontIcon className="w-4 h-4" />
-                          Marca: {product.Marca}
-                        </p>
-                        {product.Categoria && (
+                        {/* Informações adicionais
+                        <div className="space-y-2 text-sm text-gray-500 mb-4">
                           <p className="flex items-center gap-1">
-                            <CubeIcon className="w-4 h-4" />
-                            Categoria: {product.Categoria}
+                            <BuildingStorefrontIcon className="w-4 h-4" />
+                            Marca: {product.Marca}
                           </p>
-                        )}
-                      </div> */}
+                          {product.Categoria && (
+                            <p className="flex items-center gap-1">
+                              <CubeIcon className="w-4 h-4" />
+                              Categoria: {product.Categoria}
+                            </p>
+                          )}
+                        </div> */}
+                      </div>
+                    </Link>
+
+                    {/* Botão Adicionar ao Carrinho */}
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={(e) => handleAddToCart(e, product)}
+                        className={`
+                          w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 
+                          transition-all duration-300 transform hover:scale-[1.02]
+                          ${  product.PrecoPromocional > 0
+                            ? "bg-red-600 hover:bg-red-700 text-white"
+                            : "bg-primary hover:bg-primary-dark text-white"
+                          }
+                        `}
+                      >
+                        <ShoppingCartIcon className="w-5 h-5" />
+                        Adicionar ao Carrinho
+                      </button>
                     </div>
-                  </Link>
-
-                  {/* Botão Adicionar ao Carrinho */}
-                  <div className="px-4 pb-4">
-                    <button
-                      onClick={(e) => handleAddToCart(e, product)}
-                      className={`
-                        w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 
-                        transition-all duration-300 transform hover:scale-[1.02]
-                        ${  product.PrecoPromocional > 0
-                          ? "bg-red-600 hover:bg-red-700 text-white"
-                          : "bg-primary hover:bg-primary-dark text-white"
-                        }
-                      `}
-                    >
-                      <ShoppingCartIcon className="w-5 h-5" />
-                      Adicionar ao Carrinho
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {products.length === 0 && (
-              <div className="text-center py-12 bg-white rounded-lg shadow">
-                <p className="text-gray-500">Nenhum produto encontrado com os filtros selecionados</p>
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 text-primary hover:text-primary-dark font-medium"
-                >
-                  Limpar filtros
-                </button>
+                ))}
               </div>
-            )}
+
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-12 bg-white rounded-lg shadow">
+                  <p className="text-gray-500">Nenhum produto encontrado com os filtros selecionados</p>
+                  <button
+                    onClick={clearFilters}
+                    className="mt-4 text-primary hover:text-primary-dark font-medium"
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 } 

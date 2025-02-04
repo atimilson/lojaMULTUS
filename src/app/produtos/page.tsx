@@ -16,6 +16,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
 import type { ProdutosEcommerceDto as Product } from '@/api/generated/mCNSistemas.schemas';
 import toast from "react-hot-toast";
+import { FilterSidebar } from '@/components/FilterSidebar';
 
 export default function ProdutosPage() {
   const { isLoading: isAuthLoading, error: authError } = useAuth();
@@ -104,6 +105,19 @@ export default function ProdutosPage() {
     return filtered;
   }, [products, selectedBrands, priceRange, sortOrder]);
 
+  const handleBrandChange = (brand: string) => {
+    setSelectedBrands(prev => 
+      prev.includes(brand) 
+        ? prev.filter(b => b !== brand)
+        : [...prev, brand]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedBrands([]);
+    setPriceRange([0, 5000]);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -133,43 +147,14 @@ export default function ProdutosPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filtros */}
-            <div className="w-full lg:w-64 space-y-6">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold flex items-center gap-2 text-black">
-                    <FunnelIcon className="w-5 h-5" />
-                    Filtros
-                  </h3>
-                </div>
-
-                {/* Marcas */}
-                <div className="mb-6">
-                  <h4 className="font-medium mb-2 text-black">Marcas</h4>
-                  <div className="space-y-2">
-                    {brands.map((brand) => (
-                      <label
-                        key={brand}
-                        className="flex items-center gap-2 text-black"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => {
-                            setSelectedBrands((prev) =>
-                              prev.includes(brand)
-                                ? prev.filter((b) => b !== brand)
-                                : [...prev, brand]
-                            );
-                          }}
-                          className="rounded text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm">{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <FilterSidebar
+              brands={brands}
+              selectedBrands={selectedBrands}
+              onBrandChange={handleBrandChange}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              clearFilters={clearFilters}
+            />
 
             {/* Lista de Produtos */}
             <div className="flex-1">

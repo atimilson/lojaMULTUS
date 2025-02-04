@@ -3,98 +3,93 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/Header";
-import { usePromotions } from "@/hooks/usePromotions";
-import { 
-  ListBulletIcon,
-  Squares2X2Icon,
-  FunnelIcon,
-  FireIcon,
-  ShoppingCartIcon,
-} from '@heroicons/react/24/outline';
-import { useState, useMemo } from 'react';
-import { Product } from "@/types/product";
 import { useCart } from "@/contexts/CartContext";
 import toast from 'react-hot-toast';
 import { ProdutosEmPromocaoEcommerceDto } from "@/api/generated/mCNSistemas.schemas";
+import {  useGetApiPromocaoEcommerce } from '@/api/generated/mCNSistemas';
+import { FilterSidebar } from '@/components/FilterSidebar';
+import { useState, useMemo } from 'react';
+import { Product } from "@/types/product";
+import { FireIcon, ListBulletIcon, ShoppingCartIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 
 export default function PromocoesPage() {
-  const { promotions = [], isLoading, error } = usePromotions();
+  const { data: products = [], isLoading: productsLoading } = useGetApiPromocaoEcommerce({
+    empresa: 1
+  });
   const { addItem } = useCart();
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortOrder, setSortOrder] = useState<string>('maior_desconto');
+  const [sortOrder, setSortOrder] = useState<'menor_preco' | 'maior_preco' | 'nome'>('menor_preco');
 
-  // Extrair marcas únicas e remover undefined
+  // Extrair marcas únicas
   const brands = useMemo(() => {
-    if (!promotions.length) return [];
-    const brandSet = new Set(
-      promotions
-        .map(p => p.Marca)
-        .filter((brand): brand is string => !!brand)
-    );
-    return Array.from(brandSet);
-  }, [promotions]);
-
-  // Filtrar e ordenar produtos
-  const filteredProducts = useMemo(() => {
-    let filtered: ProdutosEmPromocaoEcommerceDto[] = [];
+    if (!Array.isArray(products)) return [];
     
-    if (Array.isArray(promotions) && promotions.length > 0) {
-      filtered = [...promotions];
+    return Array.from(new Set(products
+      .map(p => p.Marca)
+      .filter((brand): brand is string => typeof brand === 'string')
+    )).sort();
+  }, [products]);
 
-      // Aplicar filtros de marca
-      if (selectedBrands.length > 0) {
-        filtered = filtered.filter(p => 
-          p.Marca && selectedBrands.includes(p.Marca)
-        );
-      }
+  // Filtrar produtos
+  const filteredProducts = useMemo(() => {
+    if (!Array.isArray(products)) return [];
+    
+    let filtered = [...products];
 
-      // Aplicar filtro de preço
-      filtered = filtered.filter(p => {
-        const price = p.PrecoPromocional || p.PrecoNormal || 0;
-        return price >= priceRange[0] && price <= priceRange[1];
-      });
+    // Aplicar filtros de marca
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter(p => selectedBrands.includes(p.Marca || ''));
+    }
 
-      // Ordenação
-      switch (sortOrder) {
-        case 'maior_desconto':
-          filtered.sort((a, b) => {
-            const aNormal = a.PrecoNormal || 0;
-            const aPromo = a.PrecoPromocional || aNormal;
-            const bNormal = b.PrecoNormal || 0;
-            const bPromo = b.PrecoPromocional || bNormal;
+    // Aplicar filtro de preço
+    filtered = filtered.filter(p => {
+      const price = p.PrecoPromocional || p.PrecoNormal || 0;
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
 
-            const discountA = ((aNormal - aPromo) / aNormal) * 100;
-            const discountB = ((bNormal - bPromo) / bNormal) * 100;
-            return discountB - discountA;
-          });
+    // Ordenação
+    switch (sortOrder) {
+      case "menor_preco":
+        filtered.sort((a, b) => {
+          const priceA = a.PrecoPromocional || a.PrecoNormal || 0;
+          const priceB = b.PrecoPromocional || b.PrecoNormal || 0;
+          return priceA - priceB;
+        });
 
-          break;
-        case 'menor_preco':
-          filtered.sort((a, b) => (a.PrecoPromocional || a.PrecoNormal || 0) - (b.PrecoPromocional || b.PrecoNormal || 0));
-          break;
-        case 'maior_preco':
-          filtered.sort((a, b) => (b.PrecoPromocional || b.PrecoNormal || 0) - (a.PrecoPromocional || a.PrecoNormal || 0));
-          break;
-      }
+        break;
+      case "maior_preco":
+        filtered.sort((a, b) => {
+          const priceA = a.PrecoPromocional || a.PrecoNormal || 0;
+          const priceB = b.PrecoPromocional || b.PrecoNormal || 0;
+          return priceB - priceA;
+        });
+
+        break;
+      case "nome":
+        filtered.sort((a, b) => a.Descricao?.localeCompare(b.Descricao || '') || 0);
+        break;
     }
 
     return filtered;
-  }, [promotions, selectedBrands, priceRange, sortOrder]);
+  }, [products, selectedBrands, priceRange, sortOrder]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center text-red-500">
-          Erro ao carregar promoções: {error}
-        </div>
-      </div>
+  const handleBrandChange = (brand: string) => {
+    setSelectedBrands(prev => 
+      prev.includes(brand) 
+        ? prev.filter(b => b !== brand)
+        : [...prev, brand]
     );
-  }
+  };
 
-  if (isLoading) {
+  const clearFilters = () => {
+    setSelectedBrands([]);
+    setPriceRange([0, 5000]);
+  };
+
+  if (productsLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -125,41 +120,15 @@ export default function PromocoesPage() {
 
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filtros Melhorados */}
-            <div className="w-full lg:w-64 space-y-6">
-              <div className="bg-white p-6 rounded-xl shadow-lg">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-800">
-                    <FunnelIcon className="w-5 h-5 text-red-500" />
-                    Filtros
-                  </h3>
-                </div>
-
-                {/* Marcas */}
-                <div className="mb-6">
-                  <h4 className="font-medium mb-3 text-gray-700">Marcas</h4>
-                  <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-                    {brands.map((brand) => (
-                      <label key={brand} className="flex items-center gap-2 hover:bg-red-50 p-2 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => {
-                            setSelectedBrands(prev =>
-                              prev.includes(brand)
-                                ? prev.filter(b => b !== brand)
-                                : [...prev, brand]
-                            );
-                          }}
-                          className="rounded text-red-500 focus:ring-red-400"
-                        />
-                        <span className="text-sm text-gray-600">{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Filtros */}
+            <FilterSidebar
+              brands={brands}
+              selectedBrands={selectedBrands}
+              onBrandChange={handleBrandChange}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              clearFilters={clearFilters}
+            />
 
             {/* Lista de Produtos */}
             <div className="flex-1">
@@ -189,12 +158,12 @@ export default function PromocoesPage() {
                   </div>
                   <select
                     value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
+                    onChange={(e) => setSortOrder(e.target.value as 'menor_preco' | 'maior_preco' | 'nome')}
                     className="p-2 border rounded-lg text-sm bg-white hover:border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
                   >
-                    <option value="maior_desconto">Maior Desconto</option>
                     <option value="menor_preco">Menor Preço</option>
                     <option value="maior_preco">Maior Preço</option>
+                    <option value="nome">Nome</option>
                   </select>
                 </div>
               </div>
@@ -290,10 +259,7 @@ export default function PromocoesPage() {
                 <div className="text-center py-12 bg-white rounded-xl shadow-lg">
                   <p className="text-gray-500 mb-4">Nenhum produto encontrado com os filtros selecionados</p>
                   <button
-                    onClick={() => {
-                      setSelectedBrands([]);
-                      setPriceRange([0, 2000]);
-                    }}
+                    onClick={clearFilters}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                   >
                     Limpar filtros

@@ -20,6 +20,7 @@ import {
   StarIcon,
 } from '@heroicons/react/24/outline';
 import { Metadata } from 'next';
+import { FilterSidebar } from '@/components/FilterSidebar';
 
 // Tipagem para os parâmetros da página
 type CategoryPageParams = {
@@ -28,12 +29,6 @@ type CategoryPageParams = {
 
 
 type SortOption = 'relevancia' | 'menor' | 'maior' | 'nome';
-
-type PriceRange = {
-  min: number;
-  max: number;
-  label: string;
-};
 
 // Página de categoria
 export default function CategoryPage({ params }: { params: { slug: string } }) {
@@ -44,7 +39,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOption>('relevancia');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState<PriceRange[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -75,7 +70,6 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
         { min: minPrice + range * 0.5, max: minPrice + range * 0.75, label: `R$ ${(minPrice + range * 0.5).toFixed(2)} a R$ ${(minPrice + range * 0.75).toFixed(2)}` },
         { min: minPrice + range * 0.75, max: maxPrice, label: `Acima de R$ ${(minPrice + range * 0.75).toFixed(2)}` }
       ];
-      setSelectedPriceRanges(priceRanges);
     }
   }, [productsData]);
 
@@ -88,16 +82,11 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       result = result.filter(p => selectedBrands.includes(p.Marca || ''));
     }
 
-    // Aplicar filtros de faixa de preço
-    if (selectedPriceRanges.length > 0) {
-      result = result.filter(p => {
-        const price = p.PrecoPromocional || p.Preco || 0;
-        return selectedPriceRanges.some(range => 
-          price >= range.min && price <= range.max
-        );
-      });
-
-    }
+    // Aplicar filtro de preço
+    result = result.filter(p => {
+      const price = p.PrecoPromocional || p.Preco || 0;
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
 
     // Aplicar ordenação
     switch (sortOrder) {
@@ -114,11 +103,14 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     }
 
     return result;
-  }, [products, selectedBrands, selectedPriceRanges, sortOrder]);
+  }, [products, selectedBrands, priceRange, sortOrder]);
 
   // Extrair marcas únicas
   const brands = useMemo(() => {
-    return Array.from(new Set(products.map(p => p.Marca)));
+    return Array.from(new Set(products
+      .map(p => p.Marca)
+      .filter((brand): brand is string => !!brand)
+    ));
   }, [products]);
 
   const handleBrandChange = (marca: string) => {
@@ -129,21 +121,10 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     );
   };
 
-  // Handler para filtro de preço
-  const handlePriceRangeChange = (range: PriceRange) => {
-    setSelectedPriceRanges(prev => {
-      const exists = prev.some(r => r.min === range.min && r.max === range.max);
-      if (exists) {
-        return prev.filter(r => r.min !== range.min || r.max !== range.max);
-      }
-      return [...prev, range];
-    });
-  };
-
   // Limpar todos os filtros
   const clearFilters = () => {
     setSelectedBrands([]);
-    setSelectedPriceRanges([]);
+    setPriceRange([0, 5000]);
     setSortOrder('relevancia');
   };
 
@@ -209,59 +190,15 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
 
       <main className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filtros Laterais */}
-          <aside className="w-full lg:w-64 space-y-6">
-            {/* Cabeçalho Filtros */}
-            <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex items-center gap-2">
-                <FunnelIcon className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-gray-900">Filtros</span>
-              </div>
-              <button className="text-primary hover:text-primary-dark font-medium">
-                Limpar Filtros
-              </button>
-            </div>
-
-            {/* Filtro de Preço */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">Preço</h3>
-              <div className="space-y-2">
-                {selectedPriceRanges.map((range) => (
-                  <label key={range.label} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedPriceRanges.some(r => r.min === range.min && r.max === range.max)}
-                      onChange={() => handlePriceRangeChange(range)}
-                      className="rounded text-primary focus:ring-primary"
-                    />
-                    <span className="text-gray-700">{range.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Filtro de Marcas */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">Marcas</h3>
-              <div className="space-y-2">
-                {brands.map((brand) => (
-                  <label key={brand} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedBrands.includes(brand || '')}
-                      onChange={() => handleBrandChange(brand || '')}
-                      className="rounded text-primary focus:ring-primary"
-                    />
-
-                    <span className="text-gray-700">{brand}</span>
-                    <span className="text-xs text-gray-500">
-                      ({products.filter(p => p.Marca === brand).length})
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </aside>
+          {/* Filtros */}
+          <FilterSidebar
+            brands={brands}
+            selectedBrands={selectedBrands}
+            onBrandChange={handleBrandChange}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            clearFilters={clearFilters}
+          />
 
           {/* Lista de Produtos */}
           <div className="flex-1">
