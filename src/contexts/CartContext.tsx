@@ -26,12 +26,15 @@ interface CartContextData {
   clearCart: () => void;
   total: number;
   itemsCount: number;
+  selectedShipping: { valor: string; servico: string; prazo: string } | null;
+  setSelectedShipping: (shipping: { valor: string; servico: string; prazo: string } | null) => void;
 }
 
 const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [selectedShipping, setSelectedShipping] = useState<{ valor: string; servico: string; prazo: string } | null>(null);
 
   // Carregar carrinho do localStorage quando inicializar
   useEffect(() => {
@@ -109,7 +112,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updateQuantity,
       clearCart,
       total,
-      itemsCount
+      itemsCount,
+      selectedShipping,
+      setSelectedShipping
     }}>
       {children}
     </CartContext.Provider>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useShipping } from '@/hooks/useShipping';
 import InputMask from 'react-input-mask';
 import { TruckIcon } from '@heroicons/react/24/outline';
@@ -18,6 +18,12 @@ export function ShippingCalculator({ items, total, onSelectShipping, selectedShi
   const [shippingOptions, setShippingOptions] = useState<any[]>([]);
   const { calculateShipping, isLoading, error } = useShipping();
 
+  useEffect(() => {
+    if (selectedShipping) {
+      handleCalculate();
+    }
+  }, [items]);
+
   const handleCalculate = async () => {
     if (cep.length < 8) return;
 
@@ -28,7 +34,17 @@ export function ShippingCalculator({ items, total, onSelectShipping, selectedShi
     });
 
     setShippingOptions(options);
+    if(selectedShipping) {
+      options.map((item, index) => {
+        if(item.Servico === selectedShipping.servico) {
+          onSelectShipping({valor: item.Valor,
+            servico: item.Servico,
+            prazo: item.PrazoEntrega});
+        }
+    });
+    }
   };
+
 
   return (
     <div className="space-y-4">

@@ -38,13 +38,9 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function CartPage() {
   const { isAuthenticated } = useAuth();
-  const { items, removeItem, updateQuantity, total, addItem } = useCart();
+  const { items, removeItem, updateQuantity, total, addItem, selectedShipping, setSelectedShipping } = useCart();
   const router = useRouter();
-  const [selectedShipping, setSelectedShipping] = useState<{
-    valor: string;
-    servico: string;
-    prazo: string;
-  } | null>(null);
+
 
   useEffect(() => {
     if (!isAuthenticated) {

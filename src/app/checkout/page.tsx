@@ -23,13 +23,13 @@ interface CheckoutFormData {
     state: string;
   };
   payment: {
-    method: "credit_card" | "boleto" | "pix";
+    method: "credit_card" | "boleto" | "pix" | "debit_card";
     installments: number;
   };
 }
 
 export default function CheckoutPage() {
-  const { items, total } = useCart();
+  const { items, total, selectedShipping } = useCart();
   const router = useRouter();
   const { user, isLoading: userLoading } = useEcommerceUser();
   const { addresses , isLoading: addressLoading } = useEcommerceAddress();
@@ -79,13 +79,19 @@ export default function CheckoutPage() {
   }, [user, addresses]);
 
   const installmentOptions = Array.from({ length: 12 }, (_, i) => {
-    const value = total / (i + 1);
+    let value = ((total + (selectedShipping?.valor ? parseFloat(selectedShipping.valor) : 0)) / (i + 1));
+    if (i > 0) {
+      value = value + (2.5 * i);
+    }
     return {
       number: i + 1,
-      value,
-      total: i === 0 ? total : total * 1.0199, // 1.99% de juros
+      value: value,
+      total: value * (i + 1),
     };
+
+
   });
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,52 +336,135 @@ export default function CheckoutPage() {
                 <h2 className="text-lg font-bold mb-4">Forma de Pagamento</h2>
                 <div className="space-y-4">
                   {/* Métodos de Pagamento */}
-                  <div className="flex gap-4">
-                    <label className="flex-1 border rounded-lg p-4 cursor-pointer">
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
                       <input
                         type="radio"
                         name="payment_method"
                         value="credit_card"
                         checked={formData.payment.method === "credit_card"}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            payment: {
-                              ...formData.payment,
-                              method: "credit_card",
-                            },
-                          })
-                        }
+                        onChange={() => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, method: "credit_card" }
+                        })}
                       />
                       <span className="ml-2">Cartão de Crédito</span>
                     </label>
-                    {/* ... outros métodos ... */}
+
+                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value="debit_card"
+                        checked={formData.payment.method === "debit_card"}
+                        onChange={() => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, method: "debit_card" }
+                        })}
+                      />
+                      <span className="ml-2">Cartão de Débito</span>
+                    </label>
+
+                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value="boleto"
+                        checked={formData.payment.method === "boleto"}
+                        onChange={() => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, method: "boleto" }
+                        })}
+                      />
+                      <span className="ml-2">Boleto</span>
+                    </label>
+
+                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value="pix"
+                        checked={formData.payment.method === "pix"}
+                        onChange={() => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, method: "pix" }
+                        })}
+                      />
+                      <span className="ml-2">PIX</span>
+                    </label>
                   </div>
 
-                  {/* Parcelas */}
-                  {formData.payment.method === "credit_card" && (
-                    <select
-                      className="w-full border rounded-lg p-2"
-                      value={formData.payment.installments}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          payment: {
-                            ...formData.payment,
-                            installments: Number(e.target.value),
-                          },
-                        })
-                      }
-                    >
-                      {installmentOptions.map((option) => (
-                        <option key={option.number} value={option.number}>
-                          {option.number}x de R$ {option.value.toFixed(2)}
-                          {option.number > 1
-                            ? ` (Total: R$ ${option.total.toFixed(2)})`
-                            : ""}
-                        </option>
-                      ))}
-                    </select>
+                  {/* Campos do Cartão */}
+                  {(formData.payment.method === "credit_card" || formData.payment.method === "debit_card") && (
+                    <div className="space-y-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Número do Cartão
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="0000 0000 0000 0000"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Validade
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-4 py-2 border rounded-lg"
+                            placeholder="MM/AA"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            CVV
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-4 py-2 border rounded-lg"
+                            placeholder="123"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nome no Cartão
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="Como está impresso no cartão"
+                        />
+                      </div>
+
+                      {formData.payment.method === "credit_card" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Parcelas
+                          </label>
+                          <select
+                            className="w-full px-4 py-2 border rounded-lg"
+                            value={formData.payment.installments}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              payment: { ...formData.payment, installments: Number(e.target.value) }
+                            })}
+                          >
+                            {installmentOptions.map(option => (
+                              <option key={option.number} value={option.number}>
+                                {option.number}x de R$ {option.value.toFixed(2)}
+                                {option.number > 1 ? ` (Total: R$ ${option.total.toFixed(2)})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -392,7 +481,49 @@ export default function CheckoutPage() {
           {/* Resumo */}
           <div className="bg-white rounded-lg shadow p-6 h-fit">
             <h2 className="text-lg font-bold mb-4">Resumo do Pedido</h2>
-            {/* ... resumo do pedido ... */}
+            <div className="space-y-4">
+              {/* Lista de Itens */}
+              <div className="space-y-3">
+                {items.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b">
+                    <div className="flex-1">
+                      <p className="font-medium">{item.Descricao}</p>
+                      <p className="text-sm text-gray-600">Quantidade: {item.Quantidade}</p>
+                    </div>
+                    <p className="font-medium">
+                      R$ {((item.PrecoPromocional || item.Preco || 0) * item.Quantidade).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totais */}
+              <div className="space-y-2 pt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span>R$ {total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Frete</span>
+                  <span>R$ {selectedShipping?.valor || '0.00'}</span>
+                </div>
+
+                {formData.payment.method === "credit_card" && formData.payment.installments > 1 && (
+                  <div className="flex justify-between text-sm text-red-600">
+                    <span>Juros</span>
+                    <span>R$ {(total * 0.0199).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                  <span>Total</span>
+                  <span className="text-primary">
+                    R$ {(total + (selectedShipping?.valor ? parseFloat(selectedShipping.valor) : 0) + (total * 0.0199)).toFixed(2)}
+                  </span>
+                </div>
+
+
+              </div>
+            </div>
           </div>
         </div>
       </div>
