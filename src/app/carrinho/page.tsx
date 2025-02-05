@@ -29,6 +29,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useSocialMedia } from "@/hooks/useSocialMedia";
 import { ShippingCalculator } from "@/components/ShippingCalculator";
+import { toast } from "react-toastify"; 
 
 // Adicionar a tipagem
 interface jsPDFWithAutoTable extends jsPDF {
@@ -308,6 +309,15 @@ Subtotal: R$ ${(
 
   const finalTotal = total + (selectedShipping ? parseFloat(selectedShipping.valor) : 0);
 
+  const handleCheckout = () => {
+    if (!selectedShipping) {
+      toast.error('Selecione uma opção de frete');
+      return;
+    }
+    
+    router.push('/checkout');
+  };
+
   return (
     <div className="flex-1 bg-gray-50">
       <Header />
@@ -481,10 +491,10 @@ Subtotal: R$ ${(
                     }
                   </span>
                 </div>
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="text-gray-600">Desconto</span>
                   <span className="text-green-600">- R$ 0,00</span>
-                </div>
+                </div> */}
                 <div className="pt-3 border-t border-gray-100">
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-900">Total</span>
@@ -503,16 +513,21 @@ Subtotal: R$ ${(
               </div>
 
               <div className="flex flex-col gap-4 mt-4">
-                {/* Botão Finalizar Compra PagBank */}
-                <button className="w-full px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2">
-                  Finalizar Compra
-                  <ArrowRightIcon className="w-4 h-4" />
+                {/* Botão Finalizar Compra */}
+                <button 
+                  onClick={handleCheckout}
+                  disabled={!selectedShipping}
+                  className="w-full px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {!selectedShipping ? 'Selecione um frete' : 'Finalizar Compra'}
+                  {selectedShipping && <ArrowRightIcon className="w-4 h-4" />}
                 </button>
+
 
                 {/* Botões de Impressão e WhatsApp */}
                 <div className="flex gap-4">
                   <button
-                    onClick={() => handlePrint()}
+                    onClick={handlePrint}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
                   >
                     <PrinterIcon className="w-5 h-5" />
