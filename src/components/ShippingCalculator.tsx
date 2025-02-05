@@ -9,7 +9,7 @@ import { CartItem } from '@/types/cart';
 interface ShippingCalculatorProps {
   items: CartItem[];
   total: number;
-  onSelectShipping: (shipping: { valor: string; servico: string; prazo: string }) => void;
+  onSelectShipping: (shipping: { valor: string; servico: string; prazo: string } | null) => void;
   selectedShipping?: { valor: string; servico: string; prazo: string } | null;
 }
 
@@ -24,8 +24,15 @@ export function ShippingCalculator({ items, total, onSelectShipping, selectedShi
     }
   }, [items]);
 
+  useEffect(() => {
+    if(cep.length === 0) {
+       onSelectShipping(null);
+    }
+  }, [cep]);
+
   const handleCalculate = async () => {
     if (cep.length < 8) return;
+
 
     const options = await calculateShipping({
       sCepDestino: cep.replace(/\D/g, ''),

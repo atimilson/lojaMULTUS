@@ -41,6 +41,11 @@ export default function CartPage() {
   const { items, removeItem, updateQuantity, total, addItem, selectedShipping, setSelectedShipping } = useCart();
   const router = useRouter();
 
+  useEffect(() => {
+    if (items.length === 0) {
+      setSelectedShipping(null);
+    }
+  }, [items]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -512,7 +517,7 @@ Subtotal: R$ ${(
                 {/* Botão Finalizar Compra */}
                 <button 
                   onClick={handleCheckout}
-                  disabled={!selectedShipping}
+                  disabled={!selectedShipping || items.length === 0}
                   className="w-full px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {!selectedShipping ? 'Selecione um frete' : 'Finalizar Compra'}
