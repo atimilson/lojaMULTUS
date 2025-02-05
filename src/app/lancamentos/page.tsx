@@ -55,7 +55,7 @@ export default function LancamentosPage() {
   );
 
   useEffect(() => {
-    if (productsData) {
+    if (productsData && productsData.length > 0) {
       setProducts(productsData);
     }
     setIsLoading(false);
