@@ -144,7 +144,7 @@ export function useShipping() {
 
       return [
         ...sswResult.map(ssw => ({
-          Codigo: 'SSW',
+          Codigo: 'Carvalima',
           Valor: ssw.valor,
           PrazoEntrega: ssw.prazo,
           Servico: ssw.servico

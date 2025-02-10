@@ -436,7 +436,7 @@ Subtotal: R$ ${(
             </div>
 
             {/* Cupom e Frete */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {/* Cupom de Desconto */}
               {/* <div className=" p-6">
                <div className="bg-white rounded-lg shadow-sm p-6"> 
