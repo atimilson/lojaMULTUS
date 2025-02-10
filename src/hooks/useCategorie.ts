@@ -13,8 +13,9 @@ export function useCategorie() {
     isLoading,
   } = useGetApiEcommerceProdutoCategoria({
     swr: {
-      enabled: !isAuthLoading && !authError,
-    }
+      enabled: !isAuthLoading,
+    },
+
   });
 
   const sortedCategories = categories?.sort((a: ProdutoCategoriaDto, b: ProdutoCategoriaDto) => 

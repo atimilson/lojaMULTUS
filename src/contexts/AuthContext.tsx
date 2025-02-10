@@ -2,6 +2,7 @@
 // import { cookies } from 'next/headers';
 import { createContext, useContext, useState, useEffect, SetStateAction } from 'react';
 
+
 interface AuthContextData {
   token: string | null;
   usuario: string | null;
@@ -81,8 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           Contrato: 391,
           Usuario: "ECOMMERCE",
           Senha: "123"
-        })
-      });
+        }),
+        next: {
+          revalidate: 21600 // 6 horas em segundos
+        }
+      } 
+    );
+
+
 
       const data = await response.json();
       

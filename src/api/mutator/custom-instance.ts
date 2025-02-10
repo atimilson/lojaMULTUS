@@ -23,6 +23,9 @@ export const customInstance = <T>(config: CustomConfig): Promise<T> => {
       ...(token && { 'Authorization': token }),
       ...(config.headers || {})
     },
-    body: config.data ? JSON.stringify(config.data) : undefined
+    body: config.data ? JSON.stringify(config.data) : undefined,
+    next: {
+      revalidate: 21600 // 6 horas em segundos
+    }
   }).then((response) => response.json());
 };

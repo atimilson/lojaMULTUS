@@ -22,43 +22,19 @@ export const metadata: Metadata = {
   description: "Multus Comercial", 
 };
 
-
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="pt-br">
-      <body
-        className={`w-full ${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
-          <CartProvider>
-            {children}
-            <WhatsAppButton />
-          </CartProvider>
-        </AuthProvider>
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#fff',
-              color: '#333',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              borderRadius: '0.5rem',
-              padding: '1rem',
-            },
-            success: {
-              iconTheme: {
-                primary: '#16a34a',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
+    <html lang="pt-BR">
+      <body>
+        {children}
       </body>
     </html>
   );
 }
+
+// Configurar cache compartilhado
+export const revalidate = 3600; // Cache global de 1 hora

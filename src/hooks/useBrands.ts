@@ -5,7 +5,7 @@ import { useGetApiEcommerceProdutoMarca } from '@/api/generated/mCNSistemas';
 import type { ProdutoMarcaDto } from '@/api/generated/mCNSistemas.schemas';
 
 export function useBrands() {
-  const { isLoading: isAuthLoading, error: authError } = useAuth();
+  const { isLoading: isAuthLoading, error: authError,  } = useAuth();
   
   const {
     data: brands,
@@ -14,8 +14,9 @@ export function useBrands() {
   } = useGetApiEcommerceProdutoMarca({
     swr: {
       enabled: !isAuthLoading && !authError,
-    }
+    },
   });
+
 
   const sortedBrands = brands?.sort((a: ProdutoMarcaDto, b: ProdutoMarcaDto) => 
     a.Descricao?.localeCompare(b.Descricao?b.Descricao:'', 'pt-BR', { sensitivity: 'base' }) || 0
