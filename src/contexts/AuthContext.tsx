@@ -24,6 +24,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const isTokenValid = (token: string) => {
+    try {
+      // Decodificar o token (assumindo formato base64)
+      const [, payload] = token.split('.');
+      const decodedPayload = JSON.parse(atob(payload));
+      
+      // Obter timestamp atual e de 6 horas atrás
+      const currentTime = new Date().getTime();
+      const tokenTime = new Date(decodedPayload.iat * 1000).getTime();
+      const sixHours = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
+      
+      return (currentTime - tokenTime) < sixHours;
+    } catch {
+      return false;
+    }
+  };
 
   const logout = async() => {
     // Limpar estados
@@ -40,6 +56,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authenticate();
   };
 
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    
+    if (storedToken && isTokenValid(storedToken)) {
+      setToken(storedToken);
+      setIsAuthenticated(true);
+    } else {
+      // Limpar token inválido se existir
+      localStorage.removeItem('token');
+      authenticate();
+    }
+    setIsLoading(false);
+  }, []);
 
   async function authenticate() {
     try {
@@ -69,10 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }
-
-  useEffect(() => {
-    authenticate();
-  }, []);
 
   return (
     <AuthContext.Provider value={{ 

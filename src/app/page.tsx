@@ -51,13 +51,13 @@ export default function Home() {
     destaque: 'S'
   });
 
-  if (isAuthLoading || isPromotionsLoading || isSocialLoading || apiLoading) {
-    return <Loading />;
-  }
+  // if (isAuthLoading || isPromotionsLoading || isSocialLoading || apiLoading) {
+  //   return <Loading />;
+  // }
 
-  if (authError) {
-    return <ErrorMessage message={authError.toString()} />;
-  }
+  // if (authError) {
+  //   return <ErrorMessage message={authError.toString()} />;
+  // }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -253,12 +253,13 @@ export default function Home() {
                 <div className="flex-shrink-0">
                   <Link href="/">
                     <Image
-                      src="https://www.multuscomercial.com.br/storage/empresas/24753864000142/24753864000142.png"
+                      src="/logoPng.png"
                       alt="Multus Comercial"
                       width={140}
                       height={40}
                       priority
                       className="object-contain"
+
                     />
                   </Link>
                 </div>

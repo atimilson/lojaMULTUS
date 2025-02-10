@@ -48,13 +48,13 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchMobileOpen, setIsSearchMobileOpen] = useState(false);
 
-  const { data: empresa = [] } = useGetApiEmpresa({
-    empresa: 1
-  }, {
-    swr: {
-      enabled: !isAuthLoading && !authError
-    }
-  });
+  // const { data: empresa = [] } = useGetApiEmpresa({
+  //   empresa: 1
+  // }, {
+  //   swr: {
+  //     enabled: !isAuthLoading && !authError
+  //   }
+  // });
 
   const filteredBrands = brands.filter(brand => 
     brand.Descricao?.toLowerCase().includes(searchBrand.toLowerCase()) || false
@@ -184,7 +184,7 @@ export function Header() {
             {/* Logo */}
             <Link href="/">
               <Image
-                src={`data:image/png;base64,${empresa?.[0]?.LogoMarca}`}
+                src={`/logo.png`}
                 alt="Multus Comercial"
                 width={200}
                 height={50}
@@ -473,7 +473,7 @@ export function Header() {
           </button>
 
           <Link href="/" className="flex-shrink-0">
-            <Image src={`data:image/png;base64,${empresa?.[0]?.LogoMarca}`} alt="Logo" width={160} height={70} />
+            <Image src={`/logoPng.png`} alt="Logo" width={160} height={70} />
           </Link>
 
 
