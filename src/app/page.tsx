@@ -50,6 +50,7 @@ export default function Home() {
     empresa: 1,
     destaque: 'S'
   });
+  
 
   // if (isAuthLoading || isPromotionsLoading || isSocialLoading || apiLoading) {
   //   return <Loading />;
