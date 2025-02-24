@@ -9,6 +9,8 @@ import { useEcommerceAddress } from "@/hooks/useEcommerceAddress";
 import { UsuarioEcommerceEnderecoDto } from "@/api/generated/mCNSistemas.schemas";
 import Loading from "@/components/Loading";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import { useGetApiCondpgto, useGetApiCondpgtoFormapgto } from '@/api/generated/mCNSistemas';
 
 interface CheckoutFormData {
   name: string;
@@ -25,8 +27,13 @@ interface CheckoutFormData {
     state: string;
   };
   payment: {
-    method: "credit_card" | "boleto" | "pix" | "debit_card";
+    method: "credit_card";
     installments: number;
+    cardNumber: string;
+    expMonth: string;
+    expYear: string;
+    securityCode: string;
+    cardHolder: string;
   };
 }
 
@@ -35,41 +42,16 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user, isLoading: userLoading } = useEcommerceUser();
   const { addresses = [], isLoading: addressLoading } = useEcommerceAddress();
-  let enderecoCliente: UsuarioEcommerceEnderecoDto;
-  if (addresses.length !== 0) {
-    enderecoCliente = addresses[0];
-  }else{
-    enderecoCliente = {
-      CEP: '',
-      Endereco: '',
-      Numero: '',
-      Complemento: '',
-    }
-  }
-
-  if (userLoading || addressLoading) {
-    return <Loading />;
-  }
-
-  if (!items.length) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-medium text-gray-900">Seu carrinho está vazio</h2>
-            <p className="mt-2 text-gray-600">Adicione produtos para continuar com a compra</p>
-            <Link 
-              href="/"
-              className="mt-4 inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
-            >
-              Voltar às compras
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  
+  const [enderecoCliente, setEnderecoCliente] = useState<UsuarioEcommerceEnderecoDto>({
+    CEP: '',
+    Endereco: '',
+    Numero: '',
+    Complemento: '',
+    Bairro: '',
+    Cidade: '',
+    UF: ''
+  });
 
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: "",
@@ -88,8 +70,52 @@ export default function CheckoutPage() {
     payment: {
       method: "credit_card",
       installments: 1,
+      cardNumber: "",
+      expMonth: "",
+      expYear: "",
+      securityCode: "",
+      cardHolder: "",
     },
   });
+
+  // Buscar condições de pagamento
+  const { data: condicoesPagamento = [] } = useGetApiCondpgto({    
+    condicao: 0
+  });
+
+  // Filtrar condições válidas para cartão de crédito no ecommerce
+  const parcelasDisponiveis = condicoesPagamento
+    .filter(cond => 
+      cond.Ecommerce && 
+      cond.TipoFormaPgto === 8 && 
+      cond.FormaPgto === 6
+    )
+    .sort((a, b) => (a.QtdeParcelas || 0) - (b.QtdeParcelas || 0));
+
+  // Calcular valor das parcelas
+  const calcularParcelas = (qtdeParcelas: number, valorTotal: number) => {
+    const condicao = parcelasDisponiveis.find(p => p.QtdeParcelas === qtdeParcelas);
+    if (!condicao) return valorTotal / qtdeParcelas;
+
+    // Corrigir o cálculo do percentual de acréscimo
+    const percentualAcrescimo = (condicao.PercAcrescimo || 0) / 100;
+    
+    if (condicao.CalcJuroComposto) {
+      // Cálculo de juros compostos
+      const valorParcela = (valorTotal * (1 + percentualAcrescimo) ** qtdeParcelas) / qtdeParcelas;
+      return valorParcela;
+    } else {
+      // Cálculo de juros simples
+      const valorComAcrescimo = valorTotal * (1 + (percentualAcrescimo * qtdeParcelas));
+      return valorComAcrescimo / qtdeParcelas;
+    }
+  };
+
+  useEffect(() => {
+    if (addresses.length > 0) {
+      setEnderecoCliente(addresses[0]);
+    }
+  }, [addresses]);
 
   useEffect(() => {
     if (user && enderecoCliente) {
@@ -112,20 +138,41 @@ export default function CheckoutPage() {
     }
   }, [user, enderecoCliente]);
 
-  const installmentOptions = Array.from({ length: 12 }, (_, i) => {
-    let value = ((total + (selectedShipping?.valor ? parseFloat(selectedShipping.valor) : 0)) / (i + 1));
-    if (i > 0) {
-      value = value + (2.5 * i);
-    }
+  if (userLoading || addressLoading) {
+    return <Loading />;
+  }
+
+  if (!items.length) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-medium text-gray-900">Seu carrinho está vazio</h2>
+            <p className="mt-2 text-gray-600">Adicione produtos para continuar com a compra</p>
+            <Link href="/" className="mt-4 inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+              Voltar às compras
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Substituir o installmentOptions existente
+  const valorTotal = total + (selectedShipping?.valor ? parseFloat(selectedShipping.valor) : 0);
+  const installmentOptions = parcelasDisponiveis.map(condicao => {
+    const qtdeParcelas = condicao.QtdeParcelas || 1;
+    const valorParcela = calcularParcelas(qtdeParcelas, valorTotal);
+    const valorTotalParcelado = valorParcela * qtdeParcelas;
+
     return {
-      number: i + 1,
-      value: value,
-      total: value * (i + 1),
+      number: qtdeParcelas,
+      value: valorParcela,
+      total: valorTotalParcelado,
+      description: condicao.Descricao
     };
-
-
   });
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,18 +191,36 @@ export default function CheckoutPage() {
             cpf: formData.cpf,
             phone: formData.phone,
           },
-          shipping: formData.address,
-          payment: formData.payment,
+          shipping: {
+            ...formData.address,
+            valor: selectedShipping?.valor || '0'
+          },
+          payment: {
+            method: formData.payment.method,
+            ...(formData.payment.method === 'credit_card' && {
+              installments: formData.payment.installments,
+              card: {
+                number: formData.payment.cardNumber,
+                expMonth: formData.payment.expMonth,
+                expYear: formData.payment.expYear,
+                securityCode: formData.payment.securityCode,
+                holder: formData.payment.cardHolder
+              }
+            })
+          }
         }),
       });
 
       const data = await response.json();
 
       if (data.id) {
-        window.location.href = data.payment_url;
+        router.push('/pedido-finalizado');
+      } else {
+        toast.error('Erro ao processar pagamento. Tente novamente.');
       }
     } catch (error) {
       console.error("Erro:", error);
+      toast.error('Erro ao processar pagamento. Tente novamente.');
     }
   };
 
@@ -355,7 +420,6 @@ export default function CheckoutPage() {
                           <option value="">Selecione...</option>
                           <option value="AC">Acre</option>
                           <option value="AL">Alagoas</option>
-                          {/* ... outros estados ... */}
                           <option value="SP">São Paulo</option>
                           <option value="TO">Tocantins</option>
                         </select>
@@ -369,137 +433,139 @@ export default function CheckoutPage() {
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-lg font-bold mb-4">Forma de Pagamento</h2>
                 <div className="space-y-4">
-                  {/* Métodos de Pagamento */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="credit_card"
-                        checked={formData.payment.method === "credit_card"}
-                        onChange={() => setFormData({
-                          ...formData,
-                          payment: { ...formData.payment, method: "credit_card" }
-                        })}
-                      />
-                      <span className="ml-2">Cartão de Crédito</span>
-                    </label>
-
-                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="debit_card"
-                        checked={formData.payment.method === "debit_card"}
-                        onChange={() => setFormData({
-                          ...formData,
-                          payment: { ...formData.payment, method: "debit_card" }
-                        })}
-                      />
-                      <span className="ml-2">Cartão de Débito</span>
-                    </label>
-
-                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="boleto"
-                        checked={formData.payment.method === "boleto"}
-                        onChange={() => setFormData({
-                          ...formData,
-                          payment: { ...formData.payment, method: "boleto" }
-                        })}
-                      />
-                      <span className="ml-2">Boleto</span>
-                    </label>
-
-                    <label className="border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value="pix"
-                        checked={formData.payment.method === "pix"}
-                        onChange={() => setFormData({
-                          ...formData,
-                          payment: { ...formData.payment, method: "pix" }
-                        })}
-                      />
-                      <span className="ml-2">PIX</span>
-                    </label>
-                  </div>
-
                   {/* Campos do Cartão */}
-                  {(formData.payment.method === "credit_card" || formData.payment.method === "debit_card") && (
-                    <div className="space-y-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Número do Cartão
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full px-4 py-2 border rounded-lg"
-                          placeholder="0000 0000 0000 0000"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Validade
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full px-4 py-2 border rounded-lg"
-                            placeholder="MM/AA"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            CVV
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full px-4 py-2 border rounded-lg"
-                            placeholder="123"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Nome no Cartão
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full px-4 py-2 border rounded-lg"
-                          placeholder="Como está impresso no cartão"
-                        />
-                      </div>
-
-                      {formData.payment.method === "credit_card" && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Parcelas
-                          </label>
-                          <select
-                            className="w-full px-4 py-2 border rounded-lg"
-                            value={formData.payment.installments}
-                            onChange={(e) => setFormData({
-                              ...formData,
-                              payment: { ...formData.payment, installments: Number(e.target.value) }
-                            })}
-                          >
-                            {installmentOptions.map(option => (
-                              <option key={option.number} value={option.number}>
-                                {option.number}x de R$ {option.value.toFixed(2)}
-                                {option.number > 1 ? ` (Total: R$ ${option.total.toFixed(2)})` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nome no Cartão
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.payment.cardHolder}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, cardHolder: e.target.value }
+                        })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                        placeholder="Nome como está no cartão"
+                        required
+                      />
                     </div>
-                  )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Número do Cartão
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.payment.cardNumber}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, cardNumber: e.target.value }
+                        })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                        placeholder="0000 0000 0000 0000"
+                        maxLength={16}
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Mês
+                        </label>
+                        <select
+                          value={formData.payment.expMonth}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            payment: { ...formData.payment, expMonth: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border rounded-lg"
+                          required
+                        >
+                          <option value="">MM</option>
+                          {Array.from({ length: 12 }, (_, i) => {
+                            const month = (i + 1).toString().padStart(2, '0');
+                            return (
+                              <option key={month} value={month}>
+                                {month}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ano
+                        </label>
+                        <select
+                          value={formData.payment.expYear}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            payment: { ...formData.payment, expYear: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border rounded-lg"
+                          required
+                        >
+                          <option value="">AAAA</option>
+                          {Array.from({ length: 10 }, (_, i) => {
+                            const year = (new Date().getFullYear() + i).toString();
+                            return (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          CVV
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.payment.securityCode}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            payment: { ...formData.payment, securityCode: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border rounded-lg"
+                          placeholder="123"
+                          maxLength={4}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Parcelas
+                      </label>
+                      <select
+                        value={formData.payment.installments}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          payment: { ...formData.payment, installments: Number(e.target.value) }
+                        })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                        required
+                      >
+                        <option value="">Selecione as parcelas</option>
+                        {installmentOptions.map((option) => (
+                          <option key={option.number} value={option.number}>
+                            {option.description} - {option.number}x de R$ {option.value.toFixed(2)}
+                            {option.number && option.number > 1 && option.total > valorTotal 
+                              ? ` (Total: R$ ${option.total.toFixed(2)})` 
+                              : ''
+                            }
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -542,20 +608,12 @@ export default function CheckoutPage() {
                   <span>R$ {selectedShipping?.valor || '0.00'}</span>
                 </div>
 
-                {formData.payment.method === "credit_card" && formData.payment.installments > 1 && (
-                  <div className="flex justify-between text-sm text-red-600">
-                    <span>Juros</span>
-                    <span>R$ {(total * 0.0199).toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total</span>
                   <span className="text-primary">
-                    R$ {(total + (selectedShipping?.valor ? parseFloat(selectedShipping.valor) : 0) + (total * 0.0199)).toFixed(2)}
+                    R$ {((selectedShipping?.valor ? parseFloat(selectedShipping.valor) : total) + (total)).toFixed(2)}
                   </span>
                 </div>
-
-
               </div>
             </div>
           </div>

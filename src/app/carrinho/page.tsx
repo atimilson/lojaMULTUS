@@ -30,6 +30,7 @@ import autoTable from "jspdf-autotable";
 import { useSocialMedia } from "@/hooks/useSocialMedia";
 import { ShippingCalculator } from "@/components/ShippingCalculator";
 import { toast } from "react-toastify"; 
+import { useEcommerceUser } from "@/hooks/useEcommerceUser";
 
 // Adicionar a tipagem
 interface jsPDFWithAutoTable extends jsPDF {
@@ -40,6 +41,7 @@ export default function CartPage() {
   const { isAuthenticated } = useAuth();
   const { items, removeItem, updateQuantity, total, addItem, selectedShipping, setSelectedShipping } = useCart();
   const router = useRouter();
+  const { user, isLoading: userLoading, saveUser } = useEcommerceUser();
 
   useEffect(() => {
     if (items.length === 0) {
@@ -80,232 +82,106 @@ export default function CartPage() {
 
   // Função para imprimir carrinho
   const handlePrint = () => {
-    const printWindow = window.open("", "_blank");
-    printWindow?.document.writeln(`
-      <html>
-        <head>
-          <title>Carrinho de Compras - ${empresa[0]?.Fantasia || "Loja"}</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 20px;
-              max-width: 800px;
-              margin: 0 auto;
-            }
-            .header {
-              text-align: center;
-              padding-bottom: 20px;
-              border-bottom: 2px solid #eee;
-              margin-bottom: 20px;
-            }
-            .logo {
-              max-width: 200px;
-              margin-bottom: 10px;
-            }
-            .company-info {
-              font-size: 14px;
-              color: #666;
-              margin-bottom: 20px;
-            }
-            .item { 
-              padding: 15px;
-              border-bottom: 1px solid #eee;
-              margin-bottom: 10px;
-            }
-            .item h3 {
-              margin: 0 0 10px 0;
-              color: #333;
-            }
-            .total { 
-              margin-top: 20px;
-              padding-top: 20px;
-              border-top: 2px solid #eee;
-              font-weight: bold;
-              font-size: 18px;
-              text-align: right;
-            }
-            .date {
-              text-align: right;
-              font-size: 12px;
-              color: #666;
-              margin-bottom: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            ${
-              empresa[0]?.LogoMarca
-                ? `<img src="data:image/png;base64,${empresa[0].LogoMarca}" class="logo" alt="${empresa[0].Fantasia}"/>`
-                : ""
-            }
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    
+    // Cabeçalho da empresa
+    doc.setFontSize(16);
+    doc.text(empresa[0]?.Fantasia || "Loja", 14, 20);
+    doc.setFontSize(12);
+    doc.text([
+      `${empresa[0]?.Endereco || ''}, ${empresa[0]?.Numero || ''}`,
+      `${empresa[0]?.Cidade || ''} - ${empresa[0]?.UF || ''}`,
+      `Tel: ${empresa[0]?.Fone1 || ''}`
+    ], 14, 30);
 
+    // Adicionar logo se existir
+    if (empresa[0]?.LogoMarca) {
+      doc.addImage(
+        `data:image/png;base64,${empresa[0].LogoMarca}`,
+        'PNG',
+        14,
+        10,
+        30,
+        20
+      );
+    }
+    
+    // Dados do cliente (movido para baixo)
+    doc.setFontSize(16);
+    doc.text("Dados do Cliente", 14, 60);
+    doc.setFontSize(12);
+    doc.text(`Nome: ${user?.Nome || '-'}`, 14, 70);
+    doc.text(`Email: ${user?.Email || '-'}`, 14, 78);
+    doc.text(`CPF/CNPJ: ${user?.CPFouCNPJ || '-'}`, 14, 86);
+    
+    // Título do carrinho
+    doc.setFontSize(16);
+    doc.text("Carrinho de Compras", 14, 100);
 
-            <h3>${empresa[0]?.Fantasia || "Loja"}</h3>
-            <div class="company-info">
-              ${empresa[0]?.Endereco ? `${empresa[0].Endereco}, ` : ""}
-              ${empresa[0]?.Numero ? `${empresa[0].Numero}` : ""}<br/>
-              ${empresa[0]?.Cidade ? `${empresa[0].Cidade} - ` : ""}
-              ${empresa[0]?.UF || ""}<br/>
-              ${empresa[0]?.Fone1 ? `Tel: ${empresa[0].Fone1}` : ""}
-            </div>
-          </div>
+    // Tabela de produtos (ajustada posição Y)
+    const tableData = items.map((item) => [
+      item.Descricao,
+      item.Quantidade,
+      `R$ ${(item.PrecoPromocional || item.Preco || 0).toFixed(2)}`,
+      `R$ ${((item.PrecoPromocional || item.Preco || 0) * item.Quantidade).toFixed(2)}`,
+    ]);
 
-          <div class="date">
-            Data: ${new Date().toLocaleDateString()}
-          </div>
+    autoTable(doc, {
+      startY: 110,
+      head: [["Produto", "Qtd", "Preço Un.", "Total"]],
+      body: tableData,
+    });
 
-          <h2>Itens do Pedido</h2>
-          <div class="items">
-            ${items
-              .map(
-                (item) => `
-              <div class="item">
-                <h3>${item.Descricao}</h3>
-                <p>Quantidade: ${item.Quantidade}</p>
-                <p>Preço: R$ ${(
-                  item.PrecoPromocional ||
-                  item.Preco ||
-                  0
-                ).toFixed(2)}</p>
-                <p>Subtotal: R$ ${(
-                  (item.PrecoPromocional || item.Preco || 0) * item.Quantidade
-                ).toFixed(2)}</p>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-          <div class="total">
-            Total: R$ ${total.toFixed(2)}
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow?.document.close();
-    printWindow?.print();
+    // Totais
+    const finalY = (doc as any).lastAutoTable.finalY || 110;
+    doc.text(`Subtotal: R$ ${total.toFixed(2)}`, 14, finalY + 10);
+    if (selectedShipping) {
+      doc.text(`Frete: R$ ${selectedShipping.valor}`, 14, finalY + 20);
+      doc.text(
+        `Total: R$ ${(total + parseFloat(selectedShipping.valor)).toFixed(2)}`,
+        14,
+        finalY + 30
+      );
+    }
+
+    doc.save("carrinho.pdf");
   };
 
-  // Função para enviar pedido via WhatsApp
-  const handleWhatsApp = async () => {
-    // Criar um elemento temporário para renderizar o conteúdo
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 20px; width: 600px; background: white;">
-        <div style="text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
-          ${
-            empresa[0]?.LogoMarca
-              ? `<img src="data:image/png;base64,${empresa[0].LogoMarca}" style="max-width: 200px; margin-bottom: 10px;" />`
-              : ""
-          }
-          <h3 style="margin: 10px 0;">${empresa[0]?.Fantasia || "Loja"}</h3>
-          <div style="font-size: 14px; color: #666;">
-            ${empresa[0]?.Endereco ? `${empresa[0].Endereco}, ` : ""}
-            ${empresa[0]?.Numero ? `${empresa[0].Numero}` : ""}<br/>
-            ${empresa[0]?.Cidade ? `${empresa[0].Cidade} - ` : ""}
-            ${empresa[0]?.UF || ""}<br/>
-            ${empresa[0]?.Fone1 ? `Tel: ${empresa[0].Fone1}` : ""}
-          </div>
-        </div>
+  // Função para compartilhar no WhatsApp
+  const handleWhatsApp = () => {
+    const whatsappNumber =  "65981170765";
+    if (!whatsappNumber) {
+      toast.error("Número do WhatsApp não disponível");
+      return;
+    }
 
-        <div style="text-align: right; font-size: 12px; color: #666; margin-bottom: 20px;">
-          Data: ${new Date().toLocaleDateString()}
-        </div>
+    // Montar mensagem com dados do usuário
+    let message = "Olá! Gostaria de fazer um pedido:\n\n";
+    message += `*Dados do Cliente*\n`;
+    message += `Nome: ${user?.Nome || '-'}\n`;
+    message += `Email: ${user?.Email || '-'}\n`;
+    message += `CPF/CNPJ: ${user?.CPFouCNPJ || '-'}\n\n`;
+    message += "*Itens do Pedido:*\n\n";
 
-        <h2 style="margin-bottom: 15px;">Itens do Pedido</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <thead>
-            <tr style="background: #f8f8f8;">
-              <th style="padding: 10px; text-align: left; border: 1px solid #eee;">Produto</th>
-              <th style="padding: 10px; text-align: center; border: 1px solid #eee;">Qtd</th>
-              <th style="padding: 10px; text-align: right; border: 1px solid #eee;">Preço</th>
-              <th style="padding: 10px; text-align: right; border: 1px solid #eee;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items
-              .map(
-                (item) => `
-              <tr>
-                <td style="padding: 10px; border: 1px solid #eee;">${
-                  item.Descricao
-                }</td>
-                <td style="padding: 10px; text-align: center; border: 1px solid #eee;">${
-                  item.Quantidade
-                }</td>
-                <td style="padding: 10px; text-align: right; border: 1px solid #eee;">R$ ${(
-                  item.PrecoPromocional ||
-                  item.Preco ||
-                  0
-                ).toFixed(2)}</td>
-                <td style="padding: 10px; text-align: right; border: 1px solid #eee;">R$ ${(
-                  (item.PrecoPromocional || item.Preco || 0) * item.Quantidade
-                ).toFixed(2)}</td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-          <tfoot>
-            <tr style="font-weight: bold;">
-              <td colspan="3" style="padding: 10px; text-align: right; border: 1px solid #eee;">Total:</td>
-              <td style="padding: 10px; text-align: right; border: 1px solid #eee;">R$ ${total.toFixed(
-                2
-              )}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    `;
+    items.forEach((item) => {
+      message += `${item.Descricao}\n`;
+      message += `Quantidade: ${item.Quantidade}\n`;
+      message += `Valor: R$ ${(
+        (item.PrecoPromocional || item.Preco || 0) *
+        item.Quantidade
+      ).toFixed(2)}\n\n`;
+    });
 
-    document.body.appendChild(tempDiv);
+    message += `\n*Subtotal: R$ ${total.toFixed(2)}*`;
+    if (selectedShipping) {
+      message += `\n*Frete: R$ ${selectedShipping.valor}*`;
+      message += `\n*Total: R$ ${(
+        total + parseFloat(selectedShipping.valor)
+      ).toFixed(2)}*`;
+    }
 
-    // Usar html2canvas para converter o HTML em imagem
-    const canvas = await import("html2canvas").then((html2canvas) =>
-      html2canvas.default(tempDiv, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-      })
-    );
-
-    document.body.removeChild(tempDiv);
-
-    // Converter canvas para blob e criar URL para download
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/png")
-    );
-    if (!blob) return;
-
-    // Criar link de download
-    const downloadLink = document.createElement("a");
-    downloadLink.href = URL.createObjectURL(blob as Blob);
-    downloadLink.download = "pedido.png";
-    downloadLink.click();
-
-    // Criar mensagem apenas com os itens
-    const message = `*Novo Pedido*\n\n${items
-      .map(
-        (item) => `
-*${item.Descricao}*
-Quantidade: ${item.Quantidade}
-Preço: R$ ${(item.PrecoPromocional || item.Preco || 0).toFixed(2)}
-Subtotal: R$ ${(
-          (item.PrecoPromocional || item.Preco || 0) * item.Quantidade
-        ).toFixed(2)}
-    `
-      )
-      .join("\n")}\n\n*Total: R$ ${total.toFixed(
-      2
-    )}*\n\nA imagem do pedido foi baixada automaticamente.`;
-
-    // Enviar para WhatsApp
-    const whatsappUrl = `https://wa.me/5565981170765?text=${encodeURIComponent(
-      message
-    )}`;
-    window.open(whatsappUrl, "_blank");
-
-    // Limpar URL após download
-    setTimeout(() => URL.revokeObjectURL(downloadLink.href), 1000);
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`);
   };
 
   const finalTotal = total + (selectedShipping ? parseFloat(selectedShipping.valor) : 0);
