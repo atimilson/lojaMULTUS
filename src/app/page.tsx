@@ -40,25 +40,54 @@ import Link from "next/link";
 import { useGetApiProdutoEcommerce } from '@/api/generated/mCNSistemas';
 import Loading from '@/components/Loading';
 import ErrorMessage from '@/components/ErrorMessage';
+import { ProdutosEcommerceDto } from "@/api/generated/mCNSistemas.schemas";
 
 export default function Home() {
-  const { isLoading: isAuthLoading, error: authError, token } = useAuth();
+  const { isAuthenticated, token, authenticate } = useAuth();
   const { promotions = [], isLoading: isPromotionsLoading } = usePromotions();
   const { getSocialMediaUrl, isLoading: isSocialLoading } = useSocialMedia();
+  const [products, setProducts] = useState<ProdutosEcommerceDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: products = [], isLoading: apiLoading } = useGetApiProdutoEcommerce({ 
+  // Usar hook gerado quando autenticado
+  const { data: authenticatedProducts = [], isLoading: isAuthLoading } = useGetApiProdutoEcommerce({ 
     empresa: 1,
     destaque: 'S'
   });
-  
 
-  // if (isAuthLoading || isPromotionsLoading || isSocialLoading || apiLoading) {
-  //   return <Loading />;
-  // }
+  // Buscar produtos com Basic Auth quando não autenticado
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const fetchProducts = async () => {
+        try {
+          const credentials = btoa('lu813em9u3l510a:wf4g5ru813em9u3l510a');
+          const response = await fetch(
+            'https://pedidoexterno.mcnsistemas.net.br/api/produto/ecommerce/destaques?contrato=391',
+            {
+              headers: {
+                'Authorization': `Basic ${credentials}`
+              },
+              next: { revalidate: 3600 } // 1 hora de cache
+            }
+          );
+          const data = await response.json();
+          setProducts(data);
+        } catch (error) {
+          console.error('Erro ao carregar produtos:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-  // if (authError) {
-  //   return <ErrorMessage message={authError.toString()} />;
-  // }
+      fetchProducts();
+    }
+  }, [isAuthenticated]);
+
+ 
+
+  // Usar os produtos apropriados baseado na autenticação
+  const displayProducts = isAuthenticated ? authenticatedProducts : products;
+  const displayLoading = isAuthenticated ? isAuthLoading : isLoading;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -89,7 +118,7 @@ export default function Home() {
           />
         )}
 
-        {apiLoading ? (
+        {displayLoading ? (
           <div className="p-6">
             <div className="animate-pulse h-8 w-48 bg-gray-200 mb-4 rounded" />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -102,10 +131,10 @@ export default function Home() {
               ))}
             </div>
           </div>
-        ) : products.length > 0 && (
+        ) : displayProducts.length > 0 && (
           <ProductCarousel
             title="Destaques"
-            products={products.slice(0, 8)}
+            products={displayProducts.slice(0, 8)}
             viewAllLink="/produtos"
             isPromotion={false}
           />

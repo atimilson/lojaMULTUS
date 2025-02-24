@@ -29,7 +29,7 @@ import type { EmpresaDto as Empresa } from '@/api/generated/mCNSistemas.schemas'
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
-  const { isLoading: isAuthLoading, error: authError } = useAuth();
+  const { isLoading: isAuthLoading, error: authError, token, isAuthenticated, authenticate } = useAuth();
   const router = useRouter();
   const { brands, isLoading: isBrandsLoading } = useBrands();
   const { itemsCount } = useCart();
@@ -55,6 +55,12 @@ export function Header() {
   //     enabled: !isAuthLoading && !authError
   //   }
   // });
+
+  useEffect(() => {
+    if (token === null && !isAuthenticated) {
+      authenticate();
+    }
+  }, [token, isAuthenticated]);
 
   const filteredBrands = brands.filter(brand => 
     brand.Descricao?.toLowerCase().includes(searchBrand.toLowerCase()) || false

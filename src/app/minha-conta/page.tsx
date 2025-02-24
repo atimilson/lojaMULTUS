@@ -296,7 +296,26 @@ export default function LoginPage() {
                         </label>
                       </div>
                     </div>
-
+                    <div>
+                      <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
+                        {formData.tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <IdentificationIcon className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <InputMask
+                          mask={getDocumentMask(formData.tipoPessoa)}
+                          value={formData.CPFouCNPJ}
+                          onChange={handleChange}
+                          id="CPFouCNPJ"
+                          name="CPFouCNPJ"
+                          required
+                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                          placeholder={formData.tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
+                        />
+                      </div>
+                    </div>
                     <div>
                       <label htmlFor="Nome" className="block text-sm font-medium text-gray-700 mb-1">
                         {formData.tipoPessoa === 'F' ? 'Nome Completo' : 'Razão Social'}
@@ -318,26 +337,7 @@ export default function LoginPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
-                        {formData.tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <IdentificationIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <InputMask
-                          mask={getDocumentMask(formData.tipoPessoa)}
-                          value={formData.CPFouCNPJ}
-                          onChange={handleChange}
-                          id="CPFouCNPJ"
-                          name="CPFouCNPJ"
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder={formData.tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
-                        />
-                      </div>
-                    </div>
+                   
 
                     {formData.tipoPessoa === 'J' && (
                       <div>

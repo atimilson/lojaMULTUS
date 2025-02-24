@@ -13,17 +13,52 @@ import 'swiper/css/pagination'
 import { useEffect, useState } from 'react'
 
 export function BannerCarousel() {
-  const { isLoading: isAuthLoading, token } = useAuth();
-  const [bannerWidth, setBannerWidth] = useState<Banner[]>([]);
+  const { isAuthenticated } = useAuth();
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  const { data: banners = [], isLoading } = useGetApiEmpresaBanner({
-    empresa: 1
-  }, {
-    swr: {
-     revalidateOnFocus: false,     
+  // Usar hook gerado quando autenticado
+  const { data: authenticatedBanners = [], isLoading: isAuthLoading } = useGetApiEmpresaBanner(
+    { empresa: 1 },
+    {
+      swr: {
+        revalidateOnFocus: false,
+      }
     }
-  });
+  );
+
+  // Buscar banners com Basic Auth quando não autenticado
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const fetchBanners = async () => {
+        try {
+          const credentials = btoa('lu813em9u3l510a:wf4g5ru813em9u3l510a');
+          const response = await fetch(
+            'https://pedidoexterno.mcnsistemas.net.br/api/ecommerce/banners?&contrato=391',
+            {
+              headers: {
+                'Authorization': `Basic ${credentials}`
+              },
+              next: { revalidate: 7200 } // 2 horas de cache
+            }
+          );
+          const data = await response.json();
+          setBanners(data);
+        } catch (error) {
+          console.error('Erro ao carregar banners:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchBanners();
+    }
+  }, [isAuthenticated]);
+
+  // Usar os banners apropriados baseado na autenticação
+  const displayBanners = isAuthenticated ? authenticatedBanners : banners;
+  const displayLoading = isAuthenticated ? isAuthLoading : isLoading;
 
   useEffect(() => {
     // Função para verificar o tamanho da tela
@@ -41,7 +76,7 @@ export function BannerCarousel() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  if (isLoading || isAuthLoading) {
+  if (displayLoading) {
     return (
       <div className="w-full bg-gray-100" style={{ aspectRatio: '32/9' }}>
         <div className="animate-pulse w-full h-full bg-gray-200" />
@@ -62,7 +97,7 @@ export function BannerCarousel() {
           aspectRatio: isMobile ? '1/1' : '32/9',
         }}
       >
-        {banners.map((banner, index) => (
+        {displayBanners.map((banner, index) => (
           banner.Tipo === (isMobile ? 'mobile' : 'desktop') && (
             <SwiperSlide key={index} className="relative w-full h-full">
               {banner.Link ? (

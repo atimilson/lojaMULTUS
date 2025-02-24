@@ -13,6 +13,7 @@ interface AuthContextData {
   logout: () => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
+  authenticate: () => void;
 
 }
 
@@ -58,18 +59,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
+    console.log('useEffect iniciado');
+    const storedToken = localStorage.getItem('token');    
     
-    if (storedToken && isTokenValid(storedToken)) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
-    } else {
-      // Limpar token inválido se existir
-      localStorage.removeItem('token');
-      authenticate();
-    }
-    setIsLoading(false);
-  }, []);
+    const initAuth = async () => {
+      if (storedToken && isTokenValid(storedToken)) {
+        setToken(storedToken);
+        setIsAuthenticated(true);
+      } else {
+        localStorage.removeItem('token');
+        await authenticate();
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+  }, []); // Execute apenas uma vez ao montar
 
   async function authenticate() {
     try {
@@ -116,8 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       error, 
       logout,
       isAuthenticated,
-
-      setIsAuthenticated 
+      setIsAuthenticated ,
+      authenticate
     }}>
       {children}
     </AuthContext.Provider>

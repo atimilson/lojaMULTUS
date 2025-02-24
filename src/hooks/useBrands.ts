@@ -3,20 +3,22 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useGetApiEcommerceProdutoMarca } from '@/api/generated/mCNSistemas';
 import type { ProdutoMarcaDto } from '@/api/generated/mCNSistemas.schemas';
+import { useEffect } from 'react';
+import { ZodNull } from 'zod';
 
 export function useBrands() {
-  const { isLoading: isAuthLoading, error: authError,  } = useAuth();
+  const { isLoading: isAuthLoading, error: authError, token, isAuthenticated, authenticate } = useAuth();
   
+
   const {
     data: brands,
     error,
-    isLoading,
+    isLoading: isApiLoading,
   } = useGetApiEcommerceProdutoMarca({
     swr: {
-      enabled: !isAuthLoading && !authError,
+      enabled: !!token, // Só executa quando tem token
     },
   });
-
 
   const sortedBrands = brands?.sort((a: ProdutoMarcaDto, b: ProdutoMarcaDto) => 
     a.Descricao?.localeCompare(b.Descricao?b.Descricao:'', 'pt-BR', { sensitivity: 'base' }) || 0
@@ -25,7 +27,7 @@ export function useBrands() {
 
   return {
     brands: sortedBrands,
-    isLoading,
+    isLoading: isApiLoading,
     error: error ? 'Erro ao carregar marcas' : null,
   };
 } 

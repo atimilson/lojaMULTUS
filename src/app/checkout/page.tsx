@@ -7,6 +7,8 @@ import { Header } from "@/components/Header";
 import { useEcommerceUser } from "@/hooks/useEcommerceUser";
 import { useEcommerceAddress } from "@/hooks/useEcommerceAddress";
 import { UsuarioEcommerceEnderecoDto } from "@/api/generated/mCNSistemas.schemas";
+import Loading from "@/components/Loading";
+import Link from "next/link";
 
 interface CheckoutFormData {
   name: string;
@@ -29,12 +31,35 @@ interface CheckoutFormData {
 }
 
 export default function CheckoutPage() {
-  const { items, total, selectedShipping } = useCart();
+  const { items = [], total = 0, selectedShipping } = useCart();
   const router = useRouter();
   const { user, isLoading: userLoading } = useEcommerceUser();
-  const { addresses , isLoading: addressLoading } = useEcommerceAddress();
-  const enderecoCliente : UsuarioEcommerceEnderecoDto = addresses[0];
+  const { addresses = [], isLoading: addressLoading } = useEcommerceAddress();
+  const enderecoCliente = addresses[0];
 
+  if (userLoading || addressLoading) {
+    return <Loading />;
+  }
+
+  if (!items.length) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-medium text-gray-900">Seu carrinho está vazio</h2>
+            <p className="mt-2 text-gray-600">Adicione produtos para continuar com a compra</p>
+            <Link 
+              href="/"
+              className="mt-4 inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
+            >
+              Voltar às compras
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: "",
@@ -484,7 +509,7 @@ export default function CheckoutPage() {
             <div className="space-y-4">
               {/* Lista de Itens */}
               <div className="space-y-3">
-                {items.map((item, index) => (
+                {items?.map((item, index) => (
                   <div key={index} className="flex justify-between items-center py-2 border-b">
                     <div className="flex-1">
                       <p className="font-medium">{item.Descricao}</p>
