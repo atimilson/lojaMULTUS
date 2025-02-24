@@ -12,7 +12,6 @@ type CustomConfig = {
 
 export const customInstance = <T>(config: CustomConfig): Promise<T> => {
   const token = localStorage.getItem('token');
-  console.log(token);
   const queryParams = config.params 
     ? `?${new URLSearchParams(config.params).toString()}`
     : '';
