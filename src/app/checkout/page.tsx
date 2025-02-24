@@ -35,7 +35,17 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user, isLoading: userLoading } = useEcommerceUser();
   const { addresses = [], isLoading: addressLoading } = useEcommerceAddress();
-  const enderecoCliente = addresses[0];
+  let enderecoCliente: UsuarioEcommerceEnderecoDto;
+  if (addresses.length !== 0) {
+    enderecoCliente = addresses[0];
+  }else{
+    enderecoCliente = {
+      CEP: '',
+      Endereco: '',
+      Numero: '',
+      Complemento: '',
+    }
+  }
 
   if (userLoading || addressLoading) {
     return <Loading />;
@@ -82,8 +92,7 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (user && addresses?.[0]) {
-      console.log(addresses[0]);
+    if (user && enderecoCliente) {
       setFormData(prev => ({
         ...prev,
         name: user.Nome || '',
@@ -91,17 +100,17 @@ export default function CheckoutPage() {
         cpf: user.CPFouCNPJ || '',
         phone: user.Fone || '',
         address: {
-          zipcode: enderecoCliente?.CEP || '',
-          street: enderecoCliente?.Endereco || '',
-          number: enderecoCliente?.Numero || '',
-          complement: enderecoCliente?.Complemento || '',
-          neighborhood: enderecoCliente?.Bairro || '',
-          city: enderecoCliente?.Cidade || '',
-          state: enderecoCliente?.UF || ''
+          zipcode: enderecoCliente.CEP || '',
+          street: enderecoCliente.Endereco || '',
+          number: enderecoCliente.Numero || '',
+          complement: enderecoCliente.Complemento || '',
+          neighborhood: enderecoCliente.Bairro || '',
+          city: enderecoCliente.Cidade || '',
+          state: enderecoCliente.UF || ''
         }
       }));
     }
-  }, [user, addresses]);
+  }, [user, enderecoCliente]);
 
   const installmentOptions = Array.from({ length: 12 }, (_, i) => {
     let value = ((total + (selectedShipping?.valor ? parseFloat(selectedShipping.valor) : 0)) / (i + 1));
