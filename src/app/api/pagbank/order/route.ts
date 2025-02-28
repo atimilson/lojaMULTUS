@@ -136,8 +136,8 @@ export async function POST(request: Request) {
         OutrasDespesas: 0,
         ValorPedido: totalAmount / 100, // Converter de centavos para reais
         ClienteNome: customer.name,
-        CPF: customer.cpf,
-        CNPJ: "",
+        CPF: customer.cpf.length === 11 ? customer.cpf : "",
+        CNPJ: customer.cpf.length === 14 ? customer.cpf : "",
         IE: "",
         Fone: customer.phone,
         DataPrevEntrega: formatDate(sevenDaysFromNow),
@@ -175,6 +175,8 @@ export async function POST(request: Request) {
         }]
       };
 
+      console.log(pedidoEcommerce);
+
       // Pegar token dos cookies
       const cookieStore = cookies();
       const token = cookieStore.get('token')?.value;
@@ -189,7 +191,7 @@ export async function POST(request: Request) {
         body: JSON.stringify(pedidoEcommerce)
       });
 
-      console.log(await pedidoResponse.json());
+      // console.log(await pedidoResponse.json());
 
       if (!pedidoResponse.ok) {
         console.error('Erro pedido:', await pedidoResponse.text());
