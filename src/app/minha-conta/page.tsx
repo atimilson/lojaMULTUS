@@ -18,23 +18,49 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import InputMask from 'react-input-mask';
 import { toast } from "react-hot-toast";
+import { customInstance } from "@/api/mutator/custom-instance";
+
+// Adicione essa interface para tipar a resposta da API
+interface ClienteResponse {
+  Contrato: number;
+  Cliente: number;
+  RazaoSocial: string;
+  Fantasia: string;
+  TipoPessoa: string;
+  CPF: string;
+  CNPJ: string;
+  IE: string;
+  Endereco: string;
+  Complemento: string;
+  Numero: string;
+  CEP: string;
+  NomeBairro: string;
+  NomeCidade: string;
+  UF: string;
+  Fone1: string;
+  Fone2: string;
+  Fone3: string;
+  Fone4: string;
+  Email: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const { register, isLoading, error } = useRegister();
   const { isAuthenticated } = useAuth();
-  const [formData, setFormData] = useState({
-    Nome: "",
-    Email: "",
-    Senha: "",
-    CPFouCNPJ: "",
-    IE: "",
-    Fone: "",
-    DataNascimento: "",
-    confirmarSenha: "",
-    termsAccepted: false,
-    tipoPessoa: "F"
-  });
+  
+  // Estados separados para cada campo
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [ie, setIe] = useState("");
+  const [fone, setFone] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [tipoPessoa, setTipoPessoa] = useState("F");
+  const [camposDesabilitados, setCamposDesabilitados] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
   // Função para determinar a máscara baseada no tipo de pessoa
@@ -52,48 +78,124 @@ export default function LoginPage() {
     }
   };
 
-  // Função atualizada para lidar com a máscara
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement;
-    
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [name]: type === "checkbox" ? checked : value
-      };
+  // Modifique a função verificarCliente
+  const verificarCliente = async (documento: string) => {
+    try {
+      const response: any = await customInstance({
+        url: `/api/cliente?cliente=0&CPFouCNPJ=${documento}`,
+        method: 'GET'
+      });
+      
+      const data = response.data;
+      console.log('Resposta da API:', data);
 
-      if (name === 'CPFouCNPJ') {
-        const numeroLimpo = value.replace(/\D/g, '');
-        newData.tipoPessoa = numeroLimpo.length > 11 ? 'J' : 'F';
-        if (numeroLimpo.length <= 11) {
-          newData.IE = '';
-        }
+      if (data && data.length > 0) {
+        const cliente = data[0];
+        console.log('Cliente encontrado:', cliente);
+
+        // Atualiza cada campo individualmente
+        setNome(cliente.TipoPessoa === 'J' ? (cliente.Fantasia || cliente.RazaoSocial) : cliente.RazaoSocial);
+        setEmail(cliente.Email);
+        setCpfCnpj(cliente.TipoPessoa === 'F' ? cliente.CPF : cliente.CNPJ);
+        setIe(cliente.IE || '');
+        setFone(cliente.Fone2 || cliente.Fone1 || cliente.Fone3 || cliente.Fone4 || '');
+        setTipoPessoa(cliente.TipoPessoa);
+        setSenha('');
+        setConfirmarSenha('');
+        
+        // Atualiza o formulário de login
+        setLoginData(prev => ({
+          ...prev,
+          email: cliente.Email
+        }));
+
+        toast.error("CPF/CNPJ já cadastrado! Faça login.");
+        setCamposDesabilitados(true);
+
+        return true;
       }
-
-      return newData;
-    });
+      
+      return false;
+    } catch (error) {
+      console.error('Erro ao verificar cliente:', error);
+      toast.error("Erro ao consultar cliente");
+      return false;
+    }
   };
 
+  // Modifique a função handleChange
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = e.target as HTMLInputElement;
+    
+    // Atualiza o campo específico baseado no nome
+    switch (name) {
+      case 'Nome':
+        setNome(value);
+        break;
+      case 'Email':
+        setEmail(value);
+        break;
+      case 'Senha':
+        setSenha(value);
+        break;
+      case 'CPFouCNPJ':
+        setCpfCnpj(value);
+        const numeroLimpo = value.replace(/\D/g, '');
+        
+        if (numeroLimpo.length > 11) {
+          setTipoPessoa('J');
+        } else {
+          setTipoPessoa('F');
+          setIe('');
+        }
+
+        if ((numeroLimpo.length === 11 && tipoPessoa === 'F') || 
+            (numeroLimpo.length === 14 && tipoPessoa === 'J')) {
+          verificarCliente(value);
+        }
+        break;
+      case 'IE':
+        setIe(value);
+        break;
+      case 'Fone':
+        setFone(value);
+        break;
+      case 'DataNascimento':
+        setDataNascimento(value);
+        break;
+      case 'confirmarSenha':
+        setConfirmarSenha(value);
+        break;
+      case 'termsAccepted':
+        setTermsAccepted(checked);
+        break;
+      case 'tipoPessoa':
+        setTipoPessoa(value);
+        break;
+    }
+  };
+
+  // Modifique o handleSubmit para usar os novos estados
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!formData.termsAccepted) {
+    if (!termsAccepted) {
       toast.error("Você precisa aceitar os termos de uso e política de privacidade");
       return;
     }
 
-    if (formData.Senha !== formData.confirmarSenha) {
+    if (senha !== confirmarSenha) {
       toast.error("As senhas não coincidem");
       return;
     }
 
-    if (formData.Senha.length < 8) {
+    if (senha.length < 8) {
       toast.error("A senha deve ter no mínimo 8 caracteres");
       return;
     }
 
-    const hasLetter = /[a-zA-Z]/.test(formData.Senha);
-    const hasSpecialChar = /[!@#$%^&*]/.test(formData.Senha);
+    const hasLetter = /[a-zA-Z]/.test(senha);
+    const hasSpecialChar = /[!@#$%^&*]/.test(senha);
 
     if (!hasLetter || !hasSpecialChar) {
       toast.error("A senha deve conter pelo menos uma letra e um caractere especial");
@@ -101,29 +203,28 @@ export default function LoginPage() {
     }
 
     const success = await register({
-      Nome: formData.Nome,
-      Email: formData.Email,
-      Senha: formData.Senha,
-      CPFouCNPJ: formData.CPFouCNPJ,
-      IE: formData.IE,
-      Fone: formData.Fone,
-      DataNascimento: formData.DataNascimento,
+      Nome: nome,
+      Email: email,
+      Senha: senha,
+      CPFouCNPJ: cpfCnpj,
+      IE: ie,
+      Fone: fone,
+      DataNascimento: dataNascimento,
     });
 
     if (success) {
       setSuccessMessage("Cadastro realizado com sucesso!");
-      setFormData({
-        Nome: "",
-        Email: "",
-        Senha: "",
-        CPFouCNPJ: "",
-        IE: "",
-        Fone: "",
-        DataNascimento: "",
-        confirmarSenha: "",
-        termsAccepted: false,
-        tipoPessoa: "F"
-      });
+      // Limpa todos os campos
+      setNome("");
+      setEmail("");
+      setSenha("");
+      setCpfCnpj("");
+      setIe("");
+      setFone("");
+      setDataNascimento("");
+      setConfirmarSenha("");
+      setTermsAccepted(false);
+      setTipoPessoa("F");
     }
   };
 
@@ -260,7 +361,7 @@ export default function LoginPage() {
                             type="radio"
                             name="tipoPessoa"
                             value="F"
-                            checked={formData.tipoPessoa === 'F'}
+                            checked={tipoPessoa === 'F'}
                             onChange={handleChange}
                             className="peer sr-only"
                           />
@@ -280,7 +381,7 @@ export default function LoginPage() {
                             type="radio"
                             name="tipoPessoa"
                             value="J"
-                            checked={formData.tipoPessoa === 'J'}
+                            checked={tipoPessoa === 'J'}
                             onChange={handleChange}
                             className="peer sr-only"
                           />
@@ -298,27 +399,27 @@ export default function LoginPage() {
                     </div>
                     <div>
                       <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
-                        {formData.tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
+                        {tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <IdentificationIcon className="h-5 w-5 text-gray-400" />
                         </div>
                         <InputMask
-                          mask={getDocumentMask(formData.tipoPessoa)}
-                          value={formData.CPFouCNPJ}
+                          mask={getDocumentMask(tipoPessoa)}
+                          value={cpfCnpj}
                           onChange={handleChange}
                           id="CPFouCNPJ"
                           name="CPFouCNPJ"
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder={formData.tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
+                          placeholder={tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
                         />
                       </div>
                     </div>
                     <div>
                       <label htmlFor="Nome" className="block text-sm font-medium text-gray-700 mb-1">
-                        {formData.tipoPessoa === 'F' ? 'Nome Completo' : 'Razão Social'}
+                        {tipoPessoa === 'F' ? 'Nome Completo' : 'Razão Social'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -328,18 +429,17 @@ export default function LoginPage() {
                           type="text"
                           id="Nome"
                           name="Nome"
-                          value={formData.Nome}
+                          value={nome}
                           onChange={handleChange}
+                          disabled={camposDesabilitados}
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder={formData.tipoPessoa === 'F' ? 'Seu nome completo' : 'Razão Social da empresa'}
+                          placeholder={tipoPessoa === 'F' ? 'Seu nome completo' : 'Razão Social da empresa'}
                         />
                       </div>
                     </div>
 
-                   
-
-                    {formData.tipoPessoa === 'J' && (
+                    {tipoPessoa === 'J' && (
                       <div>
                         <label htmlFor="IE" className="block text-sm font-medium text-gray-700 mb-1">
                           Inscrição Estadual
@@ -350,7 +450,7 @@ export default function LoginPage() {
                           </div>
                           <InputMask
                             mask="999.999.999.999"
-                            value={formData.IE}
+                            value={ie}
                             onChange={handleChange}
                             id="IE"
                             name="IE"
@@ -361,7 +461,7 @@ export default function LoginPage() {
                       </div>
                     )}
 
-                    {formData.tipoPessoa === 'F' && (
+                    {tipoPessoa === 'F' && (
                       <div>
                         <label htmlFor="DataNascimento" className="block text-sm font-medium text-gray-700 mb-1">
                           Data de Nascimento
@@ -374,7 +474,7 @@ export default function LoginPage() {
                             type="date"
                             id="DataNascimento"
                             name="DataNascimento"
-                            value={formData.DataNascimento}
+                            value={dataNascimento}
                             onChange={handleChange}
                             required
                             className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
@@ -398,7 +498,7 @@ export default function LoginPage() {
                           type="email"
                           id="Email"
                           name="Email"
-                          value={formData.Email}
+                          value={email}
                           onChange={handleChange}
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
@@ -420,7 +520,7 @@ export default function LoginPage() {
                         </div>
                         <InputMask
                           mask="(99) 99999-9999"
-                          value={formData.Fone}
+                          value={fone}
                           onChange={handleChange}
                           id="Fone"
                           name="Fone"
@@ -446,7 +546,7 @@ export default function LoginPage() {
                           type="password"
                           id="Senha"
                           name="Senha"
-                          value={formData.Senha}
+                          value={senha}
                           onChange={handleChange}
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
@@ -473,7 +573,7 @@ export default function LoginPage() {
                           type="password"
                           id="confirmarSenha"
                           name="confirmarSenha"
-                          value={formData.confirmarSenha}
+                          value={confirmarSenha}
                           onChange={handleChange}
                           required
                           className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
@@ -486,7 +586,7 @@ export default function LoginPage() {
                       <input
                         type="checkbox"
                         name="termsAccepted"
-                        checked={formData.termsAccepted}
+                        checked={termsAccepted}
                         onChange={handleChange}
                         className="mt-1 rounded text-primary focus:ring-primary"
                       />
