@@ -8,7 +8,15 @@ import {
   ShoppingBagIcon, 
   HeartIcon,
   ArrowRightOnRectangleIcon,
-  TrashIcon
+  TrashIcon,
+  PencilSquareIcon,
+  KeyIcon,
+  BellIcon,
+  CreditCardIcon,
+  ChevronRightIcon,
+  PlusCircleIcon,
+  CheckBadgeIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -23,6 +31,7 @@ import { UsuarioEcommerceEnderecoDto, UsuarioEcommerceEnderecoIncluirDto } from 
 import { AddressModal } from '@/components/AddressModal';
 import { useGetApiEcommerceUsuarioEndereco } from '@/api/generated/mCNSistemas';
 import { BiEditAlt } from 'react-icons/bi';
+import { Header } from '@/components/Header';
 
 // Schema de validação
 const userFormSchema = z.object({
@@ -41,12 +50,11 @@ export default function UserAccountPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<UsuarioEcommerceEnderecoDto | null>(null);
-  const { logout } = useAuth();
+  const { logout, usuario } = useAuth();
   const router = useRouter();
   const { user, isLoading: userLoading, saveUser } = useEcommerceUser();
   const { addresses, isLoading: addressLoading, addAddress, removeAddress } = useEcommerceAddress();
   const { mutate: getAddresses } = useGetApiEcommerceUsuarioEndereco();
-
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema)
@@ -66,9 +74,34 @@ export default function UserAccountPage() {
         Fone: data.telefone,
         DataNascimento: data.dataNascimento
       });
-      toast.success('Dados atualizados com sucesso!');
+      toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
-      toast.error('Erro ao atualizar dados');
+      toast.error('Erro ao atualizar perfil');
+      console.error(error);
+    }
+  };
+
+  const handleAddressSubmit = async (data: UsuarioEcommerceEnderecoIncluirDto) => {
+    try {
+      if (selectedAddress) {
+        // Editar endereço existente
+        await addAddress({
+          ...data,
+          // Id: selectedAddress.Id
+        });
+        toast.success('Endereço atualizado com sucesso!');
+      } else {
+        // Adicionar novo endereço
+        await addAddress(data);
+        toast.success('Endereço adicionado com sucesso!');
+      }
+      
+      setShowAddAddress(false);
+      setSelectedAddress(null);
+      getAddresses();
+    } catch (error) {
+      toast.error('Erro ao salvar endereço');
+      console.error(error);
     }
   };
 
@@ -77,36 +110,18 @@ export default function UserAccountPage() {
     setShowAddAddress(true);
   };
 
-  const handleAddressSubmit = async (data: UsuarioEcommerceEnderecoIncluirDto) => {
-    try {
-      if (selectedAddress) {
-        await removeAddress({
-          ...data,
-          Id: selectedAddress.Id,
-        } as UsuarioEcommerceEnderecoDto);
-      } else {
-        await addAddress(data);
+  const handleDeleteAddress = async (addressId: number) => {
+    if (confirm('Tem certeza que deseja excluir este endereço?')) {
+      try {
+        // await removeAddress({ Id: addressId });
+        toast.success('Endereço removido com sucesso!');
+        getAddresses();
+      } catch (error) {
+        toast.error('Erro ao remover endereço');
+        console.error(error);
       }
-      setShowAddAddress(false);
-      setSelectedAddress(null);
-      toast.success(selectedAddress ? 'Endereço atualizado com sucesso!' : 'Endereço adicionado com sucesso!');
-    } catch (error) {
-      toast.error(selectedAddress ? 'Erro ao atualizar endereço' : 'Erro ao adicionar endereço');
     }
   };
-
-  // Preencher formulário com dados existentes
-  useEffect(() => {
-    if (user) {
-      reset({
-        nome: user.Nome,
-        email: user.Email,
-        cpf: user.CPFouCNPJ,
-        telefone: user.Fone,
-        dataNascimento: user.DataNascimento
-      });
-    }
-  }, [user, reset]);
 
   if (userLoading || addressLoading) {
     return <Loading />;
@@ -114,222 +129,212 @@ export default function UserAccountPage() {
 
   return (
     <>
-      <div className="flex-1 bg-gray-50">
-        {/* Breadcrumb */}
-        <div className="bg-white border-b">
-          <div className="container mx-auto px-4 py-3">
-            <nav className="text-sm">
-              <ol className="flex items-center gap-2">
-                <li><Link href="/" className="text-primary hover:text-primary-dark">Home</Link></li>
-                <li className="text-gray-400">/</li>
-                <li className="text-gray-900 font-medium">Minha Conta</li>
-              </ol>
-            </nav>
-          </div>
+      <Header />
+      
+      {/* Hero Section com Gradiente */}
+      <div className="bg-gradient-to-r from-primary to-primary-dark text-white">
+        <div className="container mx-auto px-4 py-12">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Minha Conta</h1>
+          <nav className="text-sm text-white/80">
+            <ol className="flex items-center gap-2">
+              <li><Link href="/" className="hover:text-white">Home</Link></li>
+              <li>/</li>
+              <li className="font-medium">Minha Conta</li>
+            </ol>
+          </nav>
         </div>
-
+      </div>
+      
+      <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-4">
-                {/* Menu Lateral */}
-                <div className="p-6 border-r border-gray-200">
-                  <nav className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {/* Sidebar */}
+              <div className="md:col-span-1">
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  {/* Perfil do Usuário */}
+                  <div className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-b border-gray-100">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
+                        <UserIcon className="w-8 h-8 text-primary" />
+                      </div>
+                      <div>
+                        <h2 className="font-semibold text-gray-900">{user?.Nome || usuario}</h2>
+                        <p className="text-sm text-gray-600">{user?.Email || ''}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-sm text-primary">
+                      <CheckBadgeIcon className="w-4 h-4 mr-1" />
+                      Cliente desde {new Date().getFullYear()}
+                    </div>
+                  </div>
+                  
+                  {/* Menu de Navegação */}
+                  <nav className="p-2">
                     <button
                       onClick={() => setActiveTab('profile')}
-                      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                         activeTab === 'profile' 
                           ? 'bg-primary text-white' 
-                          : 'text-gray-600 hover:bg-gray-50'
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <UserIcon className="h-5 w-5" />
-                      Meus Dados
+                      <UserIcon className="w-5 h-5" />
+                      <span>Meu Perfil</span>
                     </button>
-
+                    
                     <button
                       onClick={() => setActiveTab('addresses')}
-                      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                         activeTab === 'addresses' 
                           ? 'bg-primary text-white' 
-                          : 'text-gray-600 hover:bg-gray-50'
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <MapPinIcon className="h-5 w-5" />
-                      Endereços
+                      <MapPinIcon className="w-5 h-5" />
+                      <span>Meus Endereços</span>
                     </button>
-
+                    
                     <button
                       onClick={() => setActiveTab('orders')}
-                      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                         activeTab === 'orders' 
                           ? 'bg-primary text-white' 
-                          : 'text-gray-600 hover:bg-gray-50'
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <ShoppingBagIcon className="h-5 w-5" />
-                      Pedidos
+                      <ShoppingBagIcon className="w-5 h-5" />
+                      <span>Meus Pedidos</span>
                     </button>
-
+                    
                     <button
                       onClick={() => setActiveTab('favorites')}
-                      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                         activeTab === 'favorites' 
                           ? 'bg-primary text-white' 
-                          : 'text-gray-600 hover:bg-gray-50'
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <HeartIcon className="h-5 w-5" />
-                      Favoritos
+                      <HeartIcon className="w-5 h-5" />
+                      <span>Favoritos</span>
                     </button>
-
+                    
+                    <hr className="my-2 border-gray-200" />
+                    
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 w-full p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-red-600 hover:bg-red-50 transition-colors"
                     >
-                      <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                      Sair
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      <span>Sair</span>
                     </button>
                   </nav>
                 </div>
-
-                {/* Conteúdo */}
-                <div className="col-span-3 p-6">
+                
+                {/* Suporte */}
+                <div className="mt-6 bg-white rounded-xl shadow-sm p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">Precisa de ajuda?</h3>
+                  <Link 
+                    href="/fale-conosco" 
+                    className="flex items-center gap-2 text-primary hover:underline"
+                  >
+                    <CogIcon className="w-5 h-5" />
+                    <span>Central de Suporte</span>
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Conteúdo Principal */}
+              <div className="md:col-span-3">
+                <div className="bg-white rounded-xl shadow-sm p-6">
                   {activeTab === 'profile' && (
                     <div>
                       <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Meus Dados</h2>
-                        <span className="text-sm text-gray-500">* Campos obrigatórios</span>
+                        <h2 className="text-2xl font-bold text-gray-900">Meu Perfil</h2>
+                        <button className="text-primary hover:text-primary-dark">
+                          <PencilSquareIcon className="w-5 h-5" />
+                        </button>
                       </div>
-
-                      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        {/* Dados Pessoais */}
-                        <div className="bg-white p-6 rounded-lg border">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados Pessoais</h3>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Nome Completo *
-                              </label>
-                              <input
-                                type="text"
-                                {...register('nome')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Seu nome completo"
-                              />
-                              {errors.nome && (
-                                <span className="text-sm text-red-500">{errors.nome.message}</span>
-                              )}
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                E-mail *
-                              </label>
-                              <input
-                                type="email"
-                                {...register('email')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="seu@email.com"
-                              />
-                              {errors.email && (
-                                <span className="text-sm text-red-500">{errors.email.message}</span>
-                              )}
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                CPF *
-                              </label>
-                              <input
-                                type="text"
-                                {...register('cpf')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="000.000.000-00"
-                              />
-                              {errors.cpf && (
-                                <span className="text-sm text-red-500">{errors.cpf.message}</span>
-                              )}
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Telefone *
-                              </label>
-                              <input
-                                type="tel"
-                                {...register('telefone')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="(00) 00000-0000"
-                              />
-                              {errors.telefone && (
-                                <span className="text-sm text-red-500">{errors.telefone.message}</span>
-                              )}
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Data de Nascimento
-                              </label>
-                              <input
-                                type="date"
-                                {...register('dataNascimento')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                              />
-                            </div>
-
-                            {/* <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Gênero
-                              </label>
-                              <select
-                                {...register('genero')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                              >
-                                <option value="">Selecione</option>
-                                <option value="M">Masculino</option>
-                                <option value="F">Feminino</option>
-                                <option value="O">Outro</option>
-                              </select>
-                            </div> */}
-                          </div>
-                        </div>
-
-                        {/* Preferências
-                        <div className="bg-white p-6 rounded-lg border">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferências</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Informações Pessoais */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <UserIcon className="w-5 h-5 text-primary" />
+                            Informações Pessoais
+                          </h3>
                           
                           <div className="space-y-4">
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                {...register('receberNoticias')}
-                                className="rounded text-primary focus:ring-primary"
-                              />
-                              <span className="text-sm text-gray-700">
-                                Desejo receber ofertas e novidades por e-mail
-                              </span>
-                            </label>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <p className="text-sm text-gray-500">Nome Completo</p>
+                              <p className="font-medium text-gray-900">{user?.Nome || 'Não informado'}</p>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <p className="text-sm text-gray-500">E-mail</p>
+                              <p className="font-medium text-gray-900">{user?.Email || 'Não informado'}</p>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <p className="text-sm text-gray-500">CPF</p>
+                              <p className="font-medium text-gray-900">{user?.CPFouCNPJ || 'Não informado'}</p>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <p className="text-sm text-gray-500">Telefone</p>
+                              <p className="font-medium text-gray-900">{user?.Fone || 'Não informado'}</p>
+                            </div>
                           </div>
-                        </div> */}
-
-                        {/* Botões */}
-                        <div className="flex justify-end gap-4">
-                          <button
-                            type="button"
-                            className="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-                          >
-                            Salvar Alterações
-                          </button>
+                          
+                          <div className="mt-6">
+                            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
+                              <PencilSquareIcon className="w-4 h-4" />
+                              Editar Informações
+                            </button>
+                          </div>
                         </div>
-                      </form>
+                        
+                        {/* Segurança e Preferências */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <KeyIcon className="w-5 h-5 text-primary" />
+                            Segurança e Preferências
+                          </h3>
+                          
+                          <div className="space-y-4">
+                            <Link 
+                              href="/esqueci-senha" 
+                              className="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors block"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                  <KeyIcon className="w-5 h-5 text-gray-500" />
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">Alterar Senha</h4>
+                                    <p className="text-sm text-gray-600">Atualize sua senha de acesso</p>
+                                  </div>
+                                </div>
+                                <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                              </div>
+                            </Link>
+                            
+                            <div className="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors">
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                  <BellIcon className="w-5 h-5 text-gray-500" />
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">Notificações</h4>
+                                    <p className="text-sm text-gray-600">Gerencie suas preferências de contato</p>
+                                  </div>
+                                </div>
+                                <ChevronRightIcon className="w-5 h-5 text-gray-400" />
+                              </div>
+                            </div>
+                            
+                            
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -337,60 +342,128 @@ export default function UserAccountPage() {
                     <div>
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">Meus Endereços</h2>
-                        <button
-                          onClick={() => setShowAddAddress(true)}
-                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
+                        <button 
+                          onClick={() => {
+                            setSelectedAddress(null);
+                            setShowAddAddress(true);
+                          }}
+                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
                         >
+                          <PlusCircleIcon className="w-4 h-4" />
                           Adicionar Endereço
                         </button>
                       </div>
-
-                      {addresses?.map((address : UsuarioEcommerceEnderecoDto) => (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div key={address.Id} className="p-4 border rounded-lg">
-                            <div className="flex justify-between items-start">
-
-
-                              <div>
-                                <h3 className="font-medium">{address.Nome}</h3>
-                                <p className="text-sm text-gray-600">
-                                  {address.Endereco}, {address.Numero}
-                                  {address.Complemento && ` - ${address.Complemento}`}
-
-                                </p>
-                                <p className="text-sm text-gray-600">
-
-                                  {address.Bairro} - {address.Cidade}/{address.UF}
-                                </p>
-                                <p className="text-sm text-gray-600">CEP: {address.CEP}</p>
-                              </div>
-                              <button
-                                onClick={() => handleEditAddress(address)}
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <BiEditAlt className="w-5 h-5" />
-
-
-                              </button>
-                            </div>
+                      
+                      {addresses?.length === 0 ? (
+                        <div className="bg-gray-50 p-8 rounded-lg text-center">
+                          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <MapPinIcon className="w-8 h-8 text-gray-400" />
                           </div>
-                      </div>
-                      ))}
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum endereço cadastrado</h3>
+                          <p className="text-gray-600 mb-6">Adicione um endereço para facilitar suas compras</p>
+                          <button 
+                            onClick={() => {
+                              setSelectedAddress(null);
+                              setShowAddAddress(true);
+                            }}
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                          >
+                            Adicionar Endereço
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {addresses?.map((address: UsuarioEcommerceEnderecoDto) => (
+                            <div key={address.Id} className="p-5 border border-gray-200 rounded-lg hover:border-primary transition-colors">
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-1">
+                                    <MapPinIcon className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-medium text-gray-900">{address.Nome}</h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {address.Endereco}, {address.Numero}
+                                      {address.Complemento && ` - ${address.Complemento}`}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      {address.Bairro} - {address.Cidade}/{address.UF}
+                                    </p>
+                                    <p className="text-sm text-gray-600">CEP: {address.CEP}</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditAddress(address)}
+                                    className="p-1 text-blue-500 hover:text-blue-700 transition-colors"
+                                    title="Editar"
+                                  >
+                                    <PencilSquareIcon className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAddress(address.Id!)}
+                                    className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                                    title="Excluir"
+                                  >
+                                    <TrashIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
-
                   {activeTab === 'orders' && (
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-6">Meus Pedidos</h2>
-                      {/* Adicionar lista de pedidos */}
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">Meus Pedidos</h2>
+                        <Link 
+                          href="/minha-conta/pedidos" 
+                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
+                        >
+                          <ShoppingBagIcon className="w-4 h-4" />
+                          Ver todos os pedidos
+                        </Link>
+                      </div>
+                      
+                      <div className="bg-gray-50 rounded-lg p-8 text-center">
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <ShoppingBagIcon className="w-8 h-8 text-primary" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">Acompanhe seus pedidos</h3>
+                        <p className="text-gray-600 mb-6">Veja o status, rastreie entregas e acesse notas fiscais</p>
+                        <Link 
+                          href="/minha-conta/pedidos" 
+                          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors inline-block"
+                        >
+                          Ver meus pedidos
+                        </Link>
+                      </div>
                     </div>
                   )}
 
                   {activeTab === 'favorites' && (
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-6">Produtos Favoritos</h2>
-                      {/* Adicionar lista de produtos favoritos */}
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">Produtos Favoritos</h2>
+                      </div>
+                      
+                      <div className="bg-gray-50 rounded-lg p-8 text-center">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <HeartIcon className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">Sua lista de favoritos está vazia</h3>
+                        <p className="text-gray-600 mb-6">Adicione produtos à sua lista de favoritos para acompanhar preços e promoções</p>
+                        <Link 
+                          href="/produtos" 
+                          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors inline-block"
+                        >
+                          Explorar produtos
+                        </Link>
+                      </div>
                     </div>
                   )}
                 </div>

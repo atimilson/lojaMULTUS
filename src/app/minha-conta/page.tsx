@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import InputMask from 'react-input-mask';
 import { toast } from "react-hot-toast";
 import { customInstance } from "@/api/mutator/custom-instance";
-
+// import axios from "axios";
 // Adicione essa interface para tipar a resposta da API
 interface ClienteResponse {
   Contrato: number;
@@ -81,36 +81,50 @@ export default function LoginPage() {
   // Modifique a função verificarCliente
   const verificarCliente = async (documento: string) => {
     try {
-      const response: any = await customInstance({
-        url: `/api/cliente?cliente=0&CPFouCNPJ=${documento}`,
-        method: 'GET'
-      });
-      
-      const data = response.data;
+      // const response: any = await axios.get(`https://pedidoexterno.mcnsistemas.net.br/api/cliente?cliente=0&CPFouCNPJ=${documento}`);
+      const token = localStorage.getItem('token');
+      const response: any = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api/cliente?cliente=0&CPFouCNPJ=${documento}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${token}`
+          }
+        }
+      )
+      const data = await response.json();
       console.log('Resposta da API:', data);
 
       if (data && data.length > 0) {
         const cliente = data[0];
         console.log('Cliente encontrado:', cliente);
 
-        // Atualiza cada campo individualmente
+        // Armazenar os dados do cliente para usar no cadastro
         setNome(cliente.TipoPessoa === 'J' ? (cliente.Fantasia || cliente.RazaoSocial) : cliente.RazaoSocial);
-        setEmail(cliente.Email);
+        setEmail(cliente.Email || '');
         setCpfCnpj(cliente.TipoPessoa === 'F' ? cliente.CPF : cliente.CNPJ);
         setIe(cliente.IE || '');
         setFone(cliente.Fone2 || cliente.Fone1 || cliente.Fone3 || cliente.Fone4 || '');
         setTipoPessoa(cliente.TipoPessoa);
+        
+        // Limpar campos de senha
         setSenha('');
         setConfirmarSenha('');
         
         // Atualiza o formulário de login
         setLoginData(prev => ({
           ...prev,
-          email: cliente.Email
+          email: cliente.Email || ''
         }));
 
-        toast.error("CPF/CNPJ já cadastrado! Faça login.");
+        // Mostrar apenas campos de email e senha
+        toast.success("Cliente encontrado! Complete seu cadastro com email e senha.");
         setCamposDesabilitados(true);
+        
+        // Forçar atualização do estado
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+        }, 100);
 
         return true;
       }
@@ -149,9 +163,10 @@ export default function LoginPage() {
           setIe('');
         }
 
+        // Verificar cliente apenas quando o campo estiver completo
         if ((numeroLimpo.length === 11 && tipoPessoa === 'F') || 
             (numeroLimpo.length === 14 && tipoPessoa === 'J')) {
-          verificarCliente(value);
+          await verificarCliente(value);
         }
         break;
       case 'IE':
@@ -175,7 +190,7 @@ export default function LoginPage() {
     }
   };
 
-  // Modifique o handleSubmit para usar os novos estados
+  // Modifique o handleSubmit para usar os dados armazenados
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -202,6 +217,8 @@ export default function LoginPage() {
       return;
     }
 
+    // Se os campos estiverem desabilitados, significa que o cliente já existe
+    // e estamos apenas completando o cadastro com email e senha
     const success = await register({
       Nome: nome,
       Email: email,
@@ -225,6 +242,7 @@ export default function LoginPage() {
       setConfirmarSenha("");
       setTermsAccepted(false);
       setTipoPessoa("F");
+      setCamposDesabilitados(false);
     }
   };
 
@@ -264,6 +282,15 @@ export default function LoginPage() {
       Senha: loginData.password,
     });
   };
+
+  // Adicione este useEffect para monitorar mudanças no estado camposDesabilitados
+  useEffect(() => {
+    if (camposDesabilitados) {
+      console.log("Campos desabilitados:", camposDesabilitados);
+      console.log("Dados do cliente:", { nome, email, cpfCnpj, tipoPessoa });
+    }
+  }, [camposDesabilitados]);
+
   return (
     <div className="flex-1 bg-gray-50">
 
@@ -351,8 +378,88 @@ export default function LoginPage() {
                   )}
 
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                    {camposDesabilitados ? (
+                      // Formulário simplificado para cliente existente
+                      <>
+                        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                          <p className="text-blue-700">Cliente encontrado! Complete seu cadastro criando uma senha.</p>
+                          <p className="text-sm text-blue-600 mt-2">
+                            Nome: {nome}<br />
+                            {tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}: {cpfCnpj}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="Email" className="block text-sm font-medium text-gray-700 mb-1">
+                            E-mail
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                              type="email"
+                              id="Email"
+                              name="Email"
+                              value={email}
+                              onChange={handleChange}
+                              required
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder="seu@email.com"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="Senha" className="block text-sm font-medium text-gray-700 mb-1">
+                            Senha
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                              type="password"
+                              id="Senha"
+                              name="Senha"
+                              value={senha}
+                              onChange={handleChange}
+                              required
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder="Mínimo 8 caracteres"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            A senha deve ter no mínimo 8 caracteres, incluindo letras e caracteres especiais.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="confirmarSenha" className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirmar Senha
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                              type="password"
+                              id="confirmarSenha"
+                              name="confirmarSenha"
+                              value={confirmarSenha}
+                              onChange={handleChange}
+                              required
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder="Confirme sua senha"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      // Formulário completo para novo cliente
+                      <>
+                        <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
                         Tipo de Cadastro
                       </label>
                       <div className="grid grid-cols-2 gap-4">
@@ -397,214 +504,156 @@ export default function LoginPage() {
                         </label>
                       </div>
                     </div>
-                    <div>
-                      <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
-                        {tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <IdentificationIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <InputMask
-                          mask={getDocumentMask(tipoPessoa)}
-                          value={cpfCnpj}
-                          onChange={handleChange}
-                          id="CPFouCNPJ"
-                          name="CPFouCNPJ"
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder={tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="Nome" className="block text-sm font-medium text-gray-700 mb-1">
-                        {tipoPessoa === 'F' ? 'Nome Completo' : 'Razão Social'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <UserIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          id="Nome"
-                          name="Nome"
-                          value={nome}
-                          onChange={handleChange}
-                          disabled={camposDesabilitados}
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder={tipoPessoa === 'F' ? 'Seu nome completo' : 'Razão Social da empresa'}
-                        />
-                      </div>
-                    </div>
 
-                    {tipoPessoa === 'J' && (
-                      <div>
-                        <label htmlFor="IE" className="block text-sm font-medium text-gray-700 mb-1">
-                          Inscrição Estadual
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <IdentificationIcon className="h-5 w-5 text-gray-400" />
+                        <div>
+                          <label htmlFor="CPFouCNPJ" className="block text-sm font-medium text-gray-700 mb-1">
+                            {tipoPessoa === 'F' ? 'CPF' : 'CNPJ'}
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <IdentificationIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <InputMask
+                              mask={getDocumentMask(tipoPessoa)}
+                              value={cpfCnpj}
+                              onChange={handleChange}
+                              id="CPFouCNPJ"
+                              name="CPFouCNPJ"
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder={tipoPessoa === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
+                              required
+                            />
                           </div>
-                          <InputMask
-                            mask="999.999.999.999"
-                            value={ie}
-                            onChange={handleChange}
-                            id="IE"
-                            name="IE"
-                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                            placeholder="000.000.000.000"
-                          />
                         </div>
-                      </div>
+
+                        {/* Campos que sempre aparecem */}
+                        <div>
+                          <label htmlFor="Email" className="block text-sm font-medium text-gray-700 mb-1">
+                            E-mail
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                              type="email"
+                              id="Email"
+                              name="Email"
+                              value={email}
+                              onChange={handleChange}
+                              required
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder="seu@email.com"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Campos que aparecem apenas se não for cliente existente */}
+                        {!camposDesabilitados && (
+                          <>
+                            <div>
+                              <label htmlFor="Nome" className="block text-sm font-medium text-gray-700 mb-1">
+                                {tipoPessoa === 'F' ? 'Nome Completo' : 'Razão Social'}
+                              </label>
+                              <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <UserIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                  type="text"
+                                  id="Nome"
+                                  name="Nome"
+                                  value={nome}
+                                  onChange={handleChange}
+                                  required
+                                  className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                                  placeholder={tipoPessoa === 'F' ? 'Seu nome completo' : 'Razão Social da empresa'}
+                                />
+                              </div>
+                            </div>
+
+                            {tipoPessoa === 'J' && (
+                              <div>
+                                <label htmlFor="IE" className="block text-sm font-medium text-gray-700 mb-1">
+                                  Inscrição Estadual
+                                </label>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <IdentificationIcon className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                  <InputMask
+                                    mask="999.999.999.999"
+                                    value={ie}
+                                    onChange={handleChange}
+                                    id="IE"
+                                    name="IE"
+                                    className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                                    placeholder="000.000.000.000"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {tipoPessoa === 'F' && (
+                              <div>
+                                <label htmlFor="DataNascimento" className="block text-sm font-medium text-gray-700 mb-1">
+                                  Data de Nascimento
+                                </label>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <CalendarIcon className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                  <InputMask
+                                    mask="99/99/9999"
+                                    value={dataNascimento}
+                                    onChange={handleChange}
+                                    id="DataNascimento"
+                                    name="DataNascimento"
+                                    className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                                    placeholder="DD/MM/AAAA"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            <div>
+                              <label htmlFor="Fone" className="block text-sm font-medium text-gray-700 mb-1">
+                                Telefone
+                              </label>
+                              <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <PhoneIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <InputMask
+                                  mask="(99) 99999-9999"
+                                  value={fone}
+                                  onChange={handleChange}
+                                  id="Fone"
+                                  name="Fone"
+                                  className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                                  placeholder="(00) 00000-0000"
+                                  required
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
                     )}
 
-                    {tipoPessoa === 'F' && (
-                      <div>
-                        <label htmlFor="DataNascimento" className="block text-sm font-medium text-gray-700 mb-1">
-                          Data de Nascimento
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <CalendarIcon className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="date"
-                            id="DataNascimento"
-                            name="DataNascimento"
-                            value={dataNascimento}
-                            onChange={handleChange}
-                            required
-                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <label
-                        htmlFor="Email"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        E-mail
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="email"
-                          id="Email"
-                          name="Email"
-                          value={email}
-                          onChange={handleChange}
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="seu@email.com"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="Fone"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Telefone
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <PhoneIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <InputMask
-                          mask="(99) 99999-9999"
-                          value={fone}
-                          onChange={handleChange}
-                          id="Fone"
-                          name="Fone"
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="(00) 00000-0000"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="Senha"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Senha
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="password"
-                          id="Senha"
-                          name="Senha"
-                          value={senha}
-                          onChange={handleChange}
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="••••••••"
-                        />
-                      </div>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Mínimo 8 caracteres, uma letra e um caractere especial
-                      </p>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="confirmarSenha"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Confirmar Senha
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="password"
-                          id="confirmarSenha"
-                          name="confirmarSenha"
-                          value={confirmarSenha}
-                          onChange={handleChange}
-                          required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="••••••••"
-                        />
-                      </div>
-                    </div>
-
+                    {/* Campos comuns para ambos os casos */}
                     <div className="flex items-start">
                       <input
                         type="checkbox"
+                        id="termsAccepted"
                         name="termsAccepted"
                         checked={termsAccepted}
                         onChange={handleChange}
-                        className="mt-1 rounded text-primary focus:ring-primary"
+                        className="mt-1 mr-2"
+                        required
                       />
-                      <label className="ml-2 text-sm text-gray-600">
-                        Li e aceito os{" "}
-                        <Link
-                          href="/termos"
-                          className="text-primary hover:text-primary-dark"
-                        >
-                          termos de uso
-                        </Link>{" "}
-                        e{" "}
-                        <Link
-                          href="/politica-privacidade"
-                          className="text-primary hover:text-primary-dark"
-                        >
-                          política de privacidade
-                        </Link>
+                      <label htmlFor="termsAccepted" className="text-sm text-gray-600">
+                        Concordo com os <Link href="/termos" className="text-primary hover:underline">Termos de Uso</Link> e <Link href="/privacidade" className="text-primary hover:underline">Política de Privacidade</Link>
                       </label>
                     </div>
 
@@ -613,7 +662,7 @@ export default function LoginPage() {
                       disabled={isLoading}
                       className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {isLoading ? "Cadastrando..." : "Criar conta"}
+                      {isLoading ? "Cadastrando..." : camposDesabilitados ? "Completar Cadastro" : "Criar conta"}
                     </button>
                   </form>
                 </div>

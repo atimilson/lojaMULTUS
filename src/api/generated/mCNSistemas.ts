@@ -1418,9 +1418,11 @@ export const usePutApiEcommerceUsuarioAlterarsenha = <TError = ResponseError>(
 export const postApiEcommerceUsuario = (
     usuarioEcommerceDto: UsuarioEcommerceDto,
  ) => {
+    const token = localStorage.getItem('token');
+      console.log(usuarioEcommerceDto);
       return customInstance<void>(
       {url: `/api/ecommerce/usuario`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
+      headers: {'Content-Type': 'application/json', 'Authorization': `${token}`},
       data: usuarioEcommerceDto
     },
       );
