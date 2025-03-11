@@ -251,9 +251,9 @@ export default function UserAccountPage() {
                     <div>
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">Meu Perfil</h2>
-                        <button className="text-primary hover:text-primary-dark">
+                        {/* <button className="text-primary hover:text-primary-dark">
                           <PencilSquareIcon className="w-5 h-5" />
-                        </button>
+                        </button> */}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -287,10 +287,10 @@ export default function UserAccountPage() {
                           </div>
                           
                           <div className="mt-6">
-                            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
+                            {/* <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
                               <PencilSquareIcon className="w-4 h-4" />
                               Editar Informações
-                            </button>
+                            </button> */}
                           </div>
                         </div>
                         
@@ -303,7 +303,7 @@ export default function UserAccountPage() {
                           
                           <div className="space-y-4">
                             <Link 
-                              href="/esqueci-senha" 
+                              href="/minha-conta/usuario/alterar-senha" 
                               className="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors block"
                             >
                               <div className="flex justify-between items-center">
@@ -318,7 +318,7 @@ export default function UserAccountPage() {
                               </div>
                             </Link>
                             
-                            <div className="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors">
+                            {/* <div className="p-4 border border-gray-200 rounded-lg hover:border-primary transition-colors">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                   <BellIcon className="w-5 h-5 text-gray-500" />
@@ -329,7 +329,7 @@ export default function UserAccountPage() {
                                 </div>
                                 <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                               </div>
-                            </div>
+                            </div> */}
                             
                             
                           </div>
