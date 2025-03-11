@@ -62,6 +62,8 @@ export default function LoginPage() {
   const [tipoPessoa, setTipoPessoa] = useState("F");
   const [camposDesabilitados, setCamposDesabilitados] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [emailStatus, setEmailStatus] = useState<'valid' | 'invalid' | 'none'>('none');
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
 
   // Função para determinar a máscara baseada no tipo de pessoa
   const getDocumentMask = (tipoPessoa: string) => {
@@ -266,12 +268,70 @@ export default function LoginPage() {
     rememberMe: false,
   });
 
+  // Modifique a função verificarUsuarioPorEmail para atualizar o status do email
+  const verificarUsuarioPorEmail = async (email: string) => {
+    try {
+      const token = await localStorage.getItem('token');
+      const response = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api/ecommerce/usuario/existe?email=${encodeURIComponent(email)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `${token}`
+          }
+        }
+      );
+      
+      // Status 200 significa que o usuário existe
+      if (response.status === 200) {
+        setEmailStatus('valid');
+        return true;
+      } else if (response.status === 400) {
+        // Se o status for 400, o email não existe
+        setEmailStatus('invalid');
+        toast.error("Email não encontrado. Crie uma nova conta.");
+        return false;
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error('Erro ao verificar email:', error);
+      
+      // Para erros de rede ou outros erros
+      toast.error("Erro ao verificar usuário");
+      return false;
+    }
+  };
+
+  // Modifique a função handleLoginChange para resetar o status quando o email for alterado
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setLoginData((prev) => ({
+    const { name, value } = e.target;
+    
+    setLoginData(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value
     }));
+    
+    // Resetar o status do email quando o usuário começar a digitá-lo novamente
+    if (name === 'email' && emailStatus === 'invalid') {
+      setEmailStatus('none');
+    }
+    
+    // Verifica se o email é válido e se o usuário está tentando fazer login
+    if (name === 'email' && value && isValidEmail(value)) {
+      // Adicione um debounce para não chamar a API muitas vezes
+      const timeoutId = setTimeout(() => {
+        verificarUsuarioPorEmail(value);
+      }, 500);
+      
+      // Limpa o timeout anterior se o usuário continuar digitando
+      return () => clearTimeout(timeoutId);
+    }
+  };
+
+  // Função para validar email
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleLoginSubmit = async (e: FormEvent) => {
@@ -290,6 +350,16 @@ export default function LoginPage() {
       console.log("Dados do cliente:", { nome, email, cpfCnpj, tipoPessoa });
     }
   }, [camposDesabilitados]);
+
+  // Modificar o link "Esqueci minha senha" no formulário de login
+  const handleEsqueciSenha = () => {
+    const email = loginData.email;
+    if (email) {
+      router.push(`/esqueci-senha?email=${encodeURIComponent(email)}`);
+    } else {
+      router.push('/esqueci-senha');
+    }
+  };
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -686,26 +756,53 @@ export default function LoginPage() {
                   )}
 
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        E-mail
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Email
                       </label>
+                      {emailStatus === 'invalid' && (
+                        <div className="p-2 mb-2 text-sm text-red-700 bg-red-100 rounded-lg">
+                          <span className="font-medium">Este email não está cadastrado.</span> 
+                          <button 
+                            onClick={() => setActiveTab('register')}
+                            className="ml-1 text-red-700 underline hover:text-red-800"
+                          >
+                            Criar uma conta com este email
+                          </button>
+                        </div>
+                      )}
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <svg
+                            className="w-5 h-5 text-gray-400"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                          </svg>
                         </div>
                         <input
                           type="email"
-                          id="email"
+                          id="login-email"
                           name="email"
                           value={loginData.email}
                           onChange={handleLoginChange}
+                          onBlur={(e) => {
+                            if (isValidEmail(e.target.value)) {
+                              verificarUsuarioPorEmail(e.target.value);
+                            }
+                          }}
                           required
-                          className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                          placeholder="seu@email.com"
+                          className={`pl-10 w-full rounded-lg border focus:ring-primary ${
+                            emailStatus === 'invalid' 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : emailStatus === 'valid'
+                                ? 'border-green-500 focus:border-green-500'
+                                : 'border-gray-300 focus:border-primary'
+                          }`}
+                          placeholder="Seu email"
                         />
                       </div>
                     </div>
@@ -747,12 +844,16 @@ export default function LoginPage() {
                           Lembrar-me
                         </span>
                       </label>
-                      <Link
-                        href="/esqueci-senha"
-                        className="text-sm text-primary hover:text-primary-dark"
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEsqueciSenha();
+                        }}
+                        className="text-sm font-medium text-primary hover:underline"
                       >
                         Esqueci minha senha
-                      </Link>
+                      </a>
                     </div>
 
                     <button

@@ -1,15 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { EnvelopeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Header } from '@/components/Header';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export default function EsqueciSenhaPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Buscar o email da URL quando a página carregar
+  useEffect(() => {
+    // No client-side, acesse os parâmetros da URL
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +98,12 @@ export default function EsqueciSenhaPage() {
                     <input
                       type="email"
                       id="email"
+                      name="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                      placeholder="seu@email.com"
                       required
+                      className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                      placeholder="Seu email"
                     />
                   </div>
                 </div>
