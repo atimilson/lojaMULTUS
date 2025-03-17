@@ -31,6 +31,7 @@ import { useSocialMedia } from "@/hooks/useSocialMedia";
 import { ShippingCalculator } from "@/components/ShippingCalculator";
 import { toast } from "react-toastify"; 
 import { useEcommerceUser } from "@/hooks/useEcommerceUser";
+import { useEcommerceAddress } from "@/hooks/useEcommerceAddress";
 
 // Adicionar a tipagem
 interface jsPDFWithAutoTable extends jsPDF {
@@ -42,6 +43,7 @@ export default function CartPage() {
   const { items, removeItem, updateQuantity, total, addItem, selectedShipping, setSelectedShipping } = useCart();
   const router = useRouter();
   const { user, isLoading: userLoading, saveUser } = useEcommerceUser();
+  const { addresses, isLoading: addressLoading } = useEcommerceAddress();
 
   useEffect(() => {
     if (items.length === 0) {
@@ -148,40 +150,182 @@ export default function CartPage() {
   };
 
   // Função para compartilhar no WhatsApp
-  const handleWhatsApp = () => {
-    const whatsappNumber =  "65981170765";
-    if (!whatsappNumber) {
-      toast.error("Número do WhatsApp não disponível");
-      return;
+  const handleWhatsApp = async () => {
+    // Primeiro, enviar o pedido para a API
+    try {
+      toast.loading('Processando pedido...');
+      
+      // Obter o token de autenticação
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Você precisa estar autenticado para enviar pedidos');
+        return;
+      }
+      
+      // Obter o endereço principal do usuário se disponível
+      const enderecoEntrega = addresses && addresses.length > 0 ? addresses[0] : {
+        Bairro: "Centro",
+        CEP: "89000000",
+        Cidade: "Blumenau",
+        Complemento: "",
+        Endereco: "Rua Principal",
+        Numero: "123",
+        UF: "SC"
+      };
+      
+      // Montar o objeto de pedido conforme solicitado
+      const pedidoData = {
+        Pedido: 0,
+        Contrato: 391,
+        Empresa: 1,
+        Tipo: "O",
+        
+        // Dados do cliente
+        Cliente: 1, // ID do cliente padrão ou registrado
+        ClienteNome: user?.Nome || "Cliente Padrão",
+        ClienteFantasia: user?.Nome || "Cliente Padrão",
+        CNPJ: user?.CPFouCNPJ && user?.CPFouCNPJ.length > 11 ? user?.CPFouCNPJ : "",
+        CPF: user?.CPFouCNPJ && user?.CPFouCNPJ.length <= 11 ? user?.CPFouCNPJ : "12345678900",
+        Email: user?.Email || "cliente@exemplo.com",
+        Fone1: user?.Fone || "47999999999",
+        Fone2: "",
+        Fone3: "",
+        InscEstadual: "",
+        
+        // Endereço
+        Bairro: enderecoEntrega.Bairro,
+        CEP: enderecoEntrega.CEP,
+        Cidade: enderecoEntrega.Cidade,
+        Complemento: enderecoEntrega.Complemento,
+        Endereco: enderecoEntrega.Endereco,
+        EnderecoNumero: enderecoEntrega.Numero,
+        UF: enderecoEntrega.UF,
+        
+        // Dados do pedido
+        DataEmissao: new Date().toISOString().split('T')[0],
+        HoraEmissao: new Date().toTimeString().split(' ')[0],
+        CondPgto: 1,
+        ValorProdutos: total,
+        ValorDesconto: 0,
+        ValorFrete: selectedShipping ? parseFloat(selectedShipping.valor) : 0,
+        ValorPedido: finalTotal,
+        Vendedor: 2,
+        VendedorNome: "Ecommerce Web",
+        Observacao: "Pedido enviado via WhatsApp",
+        
+        // Itens do pedido
+        Itens: items.map(item => ({
+          Produto: item.Produto,
+          Quantidade: item.Quantidade,
+          ValorUnitarioBruto: item.PrecoPromocional || item.Preco || 0,
+          ValorDescEspecial: 0,
+          PercDescontoItem: 0,
+          ValorDescontoItem: 0,
+          ValorUnitarioLiquido: item.PrecoPromocional || item.Preco || 0,
+          ValorTotalLiquido: (item.PrecoPromocional || item.Preco || 0) * item.Quantidade,
+          Unidade: "UN",
+          Complemento: item.Descricao || ""
+        }))
+      };
+      
+      // Enviar para a API
+      const response = await fetch('/api/pedidomobile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify(pedidoData)
+      });
+      
+      // Verificar resposta
+      const result = await response.json();
+      
+      console.log('Resposta da API de pedido:', result);
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao enviar pedido');
+      }
+      
+      toast.dismiss();
+      toast.success('Pedido enviado com sucesso!');
+      
+      // Continuar com o envio para WhatsApp normalmente
+      const whatsappNumber =  "65981170765";
+      if (!whatsappNumber) {
+        toast.error("Número do WhatsApp não disponível");
+        return;
+      }
+
+      // Montar mensagem com dados do usuário
+      let message = "Olá! Gostaria de fazer um pedido:\n\n";
+      message += `*Dados do Cliente*\n`;
+      message += `Nome: ${user?.Nome || '-'}\n`;
+      message += `Email: ${user?.Email || '-'}\n`;
+      message += `CPF/CNPJ: ${user?.CPFouCNPJ || '-'}\n\n`;
+      message += "*Itens do Pedido:*\n\n";
+
+      items.forEach((item) => {
+        message += `${item.Descricao}\n`;
+        message += `Quantidade: ${item.Quantidade}\n`;
+        message += `Valor: R$ ${(
+          (item.PrecoPromocional || item.Preco || 0) *
+          item.Quantidade
+        ).toFixed(2)}\n\n`;
+      });
+
+      message += `\n*Subtotal: R$ ${total.toFixed(2)}*`;
+      if (selectedShipping) {
+        message += `\n*Frete: R$ ${selectedShipping.valor}*`;
+        message += `\n*Total: R$ ${(
+          total + parseFloat(selectedShipping.valor)
+        ).toFixed(2)}*`;
+      }
+      
+      // Adicionar número do pedido à mensagem se disponível
+      if (result && result.Pedido) {
+        message += `\n*Número do Pedido: ${result.Pedido}*`;
+      }
+      
+      message += `\n* Recupere o Pedido no MCN Sistemas *`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`);
+      
+    } catch (error) {
+      console.error('Erro ao processar pedido:', error);
+      toast.dismiss();
+      toast.error('Erro ao enviar pedido');
+      
+      // Ainda assim, tenta enviar para o WhatsApp, mesmo com erro
+      const whatsappNumber = "65981170765";
+      let message = "Olá! Gostaria de fazer um pedido:\n\n";
+      message += `*Dados do Cliente*\n`;
+      message += `Nome: ${user?.Nome || '-'}\n`;
+      message += `Email: ${user?.Email || '-'}\n`;
+      message += `CPF/CNPJ: ${user?.CPFouCNPJ || '-'}\n\n`;
+      message += "*Itens do Pedido:*\n\n";
+
+      items.forEach((item) => {
+        message += `${item.Descricao}\n`;
+        message += `Quantidade: ${item.Quantidade}\n`;
+        message += `Valor: R$ ${(
+          (item.PrecoPromocional || item.Preco || 0) *
+          item.Quantidade
+        ).toFixed(2)}\n\n`;
+      });
+
+      message += `\n*Subtotal: R$ ${total.toFixed(2)}*`;
+      if (selectedShipping) {
+        message += `\n*Frete: R$ ${selectedShipping.valor}*`;
+        message += `\n*Total: R$ ${(
+          total + parseFloat(selectedShipping.valor)
+        ).toFixed(2)}*`;
+      }
+      
+      message += `\n* Recupere o Pedido no MCN Sistemas *`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`);
     }
-
-    // Montar mensagem com dados do usuário
-    let message = "Olá! Gostaria de fazer um pedido:\n\n";
-    message += `*Dados do Cliente*\n`;
-    message += `Nome: ${user?.Nome || '-'}\n`;
-    message += `Email: ${user?.Email || '-'}\n`;
-    message += `CPF/CNPJ: ${user?.CPFouCNPJ || '-'}\n\n`;
-    message += "*Itens do Pedido:*\n\n";
-
-    items.forEach((item) => {
-      message += `${item.Descricao}\n`;
-      message += `Quantidade: ${item.Quantidade}\n`;
-      message += `Valor: R$ ${(
-        (item.PrecoPromocional || item.Preco || 0) *
-        item.Quantidade
-      ).toFixed(2)}\n\n`;
-    });
-
-    message += `\n*Subtotal: R$ ${total.toFixed(2)}*`;
-    if (selectedShipping) {
-      message += `\n*Frete: R$ ${selectedShipping.valor}*`;
-      message += `\n*Total: R$ ${(
-        total + parseFloat(selectedShipping.valor)
-      ).toFixed(2)}*`;
-    }
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`);
   };
 
   const finalTotal = total + (selectedShipping ? parseFloat(selectedShipping.valor) : 0);

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';  
 
 const BASE_URL = 'https://pedidoexterno.mcnsistemas.net.br';
 
@@ -12,23 +12,23 @@ const axiosInstance = axios.create({
 
 // Adicionar interceptor para incluir o token em todas as requisições
 axiosInstance.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: any) => Promise.reject(error)
 );
 
 // Interceptor para tratar respostas
 axiosInstance.interceptors.response.use(
-  (response) => {
+  (response: AxiosResponse) => {
     // Retorna diretamente o dado da resposta para simplificar o uso
     return response.data;
   },
-  (error) => {
+  (error: any) => {
     // Se o erro tem resposta, extraímos a mensagem de erro
     if (error.response) {
       const { data, status } = error.response;
