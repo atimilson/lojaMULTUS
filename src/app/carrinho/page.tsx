@@ -179,9 +179,9 @@ export default function CartPage() {
         Contrato: 391,
         Empresa: 1,
         Tipo: "O",
-        
+        IdUsuario: 0,
         // Dados do cliente
-        Cliente: 1, // ID do cliente padrão ou registrado
+        Cliente: 0, // ID do cliente padrão ou registrado
         ClienteNome: user?.Nome || "Cliente Padrão",
         ClienteFantasia: user?.Nome || "Cliente Padrão",
         CNPJ: user?.CPFouCNPJ && user?.CPFouCNPJ.length > 11 ? user?.CPFouCNPJ : "",
