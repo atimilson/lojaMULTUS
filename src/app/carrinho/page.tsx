@@ -40,16 +40,18 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function CartPage() {
   const { isAuthenticated } = useAuth();
-  const { items, removeItem, updateQuantity, total, addItem, selectedShipping, setSelectedShipping } = useCart();
+  const { items: cartItems = [], removeItem, updateQuantity, total = 0, addItem, selectedShipping, setSelectedShipping } = useCart();
+  // Garantir que items sempre seja um array
+  const items = Array.isArray(cartItems) ? cartItems : [];
   const router = useRouter();
   const { user, isLoading: userLoading, saveUser } = useEcommerceUser();
   const { addresses, isLoading: addressLoading } = useEcommerceAddress();
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
       setSelectedShipping(null);
     }
-  }, [items]);
+  }, [items, setSelectedShipping]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -79,7 +81,7 @@ export default function CartPage() {
 
   // Filtrar produtos que não estão no carrinho
   const relatedProducts = products.filter(
-    (product) => !items.some((item) => item.Produto === product.Produto)
+    (product) => !items || !items.some((item) => item.Produto === product.Produto)
   );
 
   // Função para imprimir carrinho
@@ -122,10 +124,10 @@ export default function CartPage() {
 
     // Tabela de produtos (ajustada posição Y)
     const tableData = items.map((item) => [
-      item.Descricao,
-      item.Quantidade,
+      item.Descricao || "Produto",
+      item.Quantidade || 1,
       `R$ ${(item.PrecoPromocional || item.Preco || 0).toFixed(2)}`,
-      `R$ ${((item.PrecoPromocional || item.Preco || 0) * item.Quantidade).toFixed(2)}`,
+      `R$ ${((item.PrecoPromocional || item.Preco || 0) * (item.Quantidade || 1)).toFixed(2)}`,
     ]);
 
     autoTable(doc, {
@@ -206,10 +208,10 @@ export default function CartPage() {
         DataEmissao: new Date().toISOString().split('T')[0],
         HoraEmissao: new Date().toTimeString().split(' ')[0],
         CondPgto: 1,
-        ValorProdutos: total,
+        ValorProdutos: total || 0,
         ValorDesconto: 0,
-        ValorFrete: selectedShipping ? parseFloat(selectedShipping.valor) : 0,
-        ValorPedido: finalTotal,
+        ValorFrete: selectedShipping ? parseFloat(selectedShipping.valor || "0") : 0,
+        ValorPedido: finalTotal || 0,
         Vendedor: 2,
         VendedorNome: "Ecommerce Web",
         Observacao: "Pedido enviado via Ecommerce Web",
@@ -217,13 +219,13 @@ export default function CartPage() {
         // Itens do pedido
         Itens: items.map(item => ({
           Produto: item.Produto,
-          Quantidade: item.Quantidade,
+          Quantidade: item.Quantidade || 1,
           ValorUnitarioBruto: item.PrecoPromocional || item.Preco || 0,
           ValorDescEspecial: 0,
           PercDescontoItem: 0,
           ValorDescontoItem: 0,
           ValorUnitarioLiquido: item.PrecoPromocional || item.Preco || 0,
-          ValorTotalLiquido: (item.PrecoPromocional || item.Preco || 0) * item.Quantidade,
+          ValorTotalLiquido: ((item.PrecoPromocional || item.Preco || 0) * (item.Quantidade || 1)),
           Unidade: "UN",
           ConversaoUnidade: "N",
           Complemento: item.Descricao || ""
@@ -276,11 +278,11 @@ export default function CartPage() {
         ).toFixed(2)}\n\n`;
       });
 
-      message += `\n*Subtotal: R$ ${total.toFixed(2)}*`;
+      message += `\n*Subtotal: R$ ${(total || 0).toFixed(2)}*`;
       if (selectedShipping) {
-        message += `\n*Frete: R$ ${selectedShipping.valor}*`;
+        message += `\n*Frete: R$ ${selectedShipping.valor || "0"}*`;
         message += `\n*Total: R$ ${(
-          total + parseFloat(selectedShipping.valor)
+          (total || 0) + parseFloat(selectedShipping.valor || "0")
         ).toFixed(2)}*`;
       }
       
@@ -316,11 +318,11 @@ export default function CartPage() {
         ).toFixed(2)}\n\n`;
       });
 
-      message += `\n*Subtotal: R$ ${total.toFixed(2)}*`;
+      message += `\n*Subtotal: R$ ${(total || 0).toFixed(2)}*`;
       if (selectedShipping) {
-        message += `\n*Frete: R$ ${selectedShipping.valor}*`;
+        message += `\n*Frete: R$ ${selectedShipping.valor || "0"}*`;
         message += `\n*Total: R$ ${(
-          total + parseFloat(selectedShipping.valor)
+          (total || 0) + parseFloat(selectedShipping.valor || "0")
         ).toFixed(2)}*`;
       }
       
@@ -330,7 +332,7 @@ export default function CartPage() {
     }
   };
 
-  const finalTotal = total + (selectedShipping ? parseFloat(selectedShipping.valor) : 0);
+  const finalTotal = (total || 0) + (selectedShipping ? parseFloat(selectedShipping.valor || "0") : 0);
 
   const handleCheckout = () => {
     if (!selectedShipping) {
@@ -440,13 +442,13 @@ export default function CartPage() {
                       <div className="text-right">
                         {item.PrecoPromocional > 0 && (
                           <p className="text-sm text-gray-500 line-through">
-                            R$ {item.Preco.toFixed(2)}
+                            R$ {(item.Preco || 0).toFixed(2)}
                           </p>
                         )}
                         <p className="text-lg font-bold text-primary">
                           R${" "}
                           {(
-                            (item.PrecoPromocional || item.Preco) *
+                            ((item.PrecoPromocional || item.Preco || 0)) *
                             item.Quantidade
                           ).toFixed(2)}
                         </p>
@@ -503,13 +505,13 @@ export default function CartPage() {
                   <span className="text-gray-600">
                     Subtotal ({items.length} itens)
                   </span>
-                  <span className="text-gray-900">R$ {total.toFixed(2)}</span>
+                  <span className="text-gray-900">R$ {(total || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Frete</span>
                   <span className="text-gray-900">
                     {selectedShipping 
-                      ? `R$ ${selectedShipping.valor}`
+                      ? `R$ ${selectedShipping.valor || "0"}`
                       : 'Calcular frete'
                     }
                   </span>
@@ -523,7 +525,7 @@ export default function CartPage() {
                     <span className="font-medium text-gray-900">Total</span>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">
-                        R$ {finalTotal.toFixed(2)}
+                        R$ {(finalTotal || 0).toFixed(2)}
                       </p>
                       {selectedShipping && (
                         <p className="text-sm text-gray-600">
@@ -606,15 +608,15 @@ export default function CartPage() {
                   {product.PrecoPromocional > 0 ? (
                     <>
                       <p className="text-sm text-gray-500 line-through">
-                        R$ {product.Preco.toFixed(2)}
+                        R$ {(product.Preco || 0).toFixed(2)}
                       </p>
                       <p className="text-lg font-bold text-red-600">
-                        R$ {product.PrecoPromocional.toFixed(2)}
+                        R$ {(product.PrecoPromocional || 0).toFixed(2)}
                       </p>
                     </>
                   ) : (
                     <p className="text-lg font-bold text-primary">
-                      R$ {product.Preco.toFixed(2)}
+                      R$ {(product.Preco || 0).toFixed(2)}
                     </p>
                   )}
                 </Link>
