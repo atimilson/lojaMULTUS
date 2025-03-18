@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PedidoDto, RetornoPedido } from '@/api/generated/mCNSistemas.schemas';
 
 // URL base da API externa
-const BASE_URL = 'https://pedidoexterno.mcnsistemas.net.br';
+const BASE_URL = 'https://pedidoexternohomolog.mcnsistemas.net.br';
 
 export async function POST(req: Request) {
   try {
@@ -80,11 +80,22 @@ export async function POST(req: Request) {
       const resultado = await response.json() as RetornoPedido;
       
       console.log('Resposta da API externa:', resultado);
+
+      const liberarSim = await fetch(`${BASE_URL}/api/pedidomobile/liberarsim`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify([
+          {
+            Pedido: resultado.Pedido || 0
+          }
+        ])
+      });
       
       // Retornar o resultado da API externa
       return NextResponse.json({
         success: true,
         Pedido: resultado.Pedido || 0,
+        LiberarSim: liberarSim.status === 200 || false,
         message: 'Pedido enviado com sucesso'
       });
     } catch (apiError: any) {

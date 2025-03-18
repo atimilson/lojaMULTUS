@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';  
 
-const BASE_URL = 'https://pedidoexterno.mcnsistemas.net.br';
+const BASE_URL = 'https://pedidoexternohomolog.mcnsistemas.net.br';
 
 // Criar instância personalizada do axios
 const axiosInstance = axios.create({

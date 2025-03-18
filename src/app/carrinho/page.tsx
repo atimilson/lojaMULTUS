@@ -32,6 +32,7 @@ import { ShippingCalculator } from "@/components/ShippingCalculator";
 import { toast } from "react-toastify"; 
 import { useEcommerceUser } from "@/hooks/useEcommerceUser";
 import { useEcommerceAddress } from "@/hooks/useEcommerceAddress";
+import axiosInstance from "@/api/axios-instance";
 
 // Adicionar a tipagem
 interface jsPDFWithAutoTable extends jsPDF {
@@ -193,7 +194,7 @@ export default function CartPage() {
         Fone2: "",
         Fone3: "",
         InscEstadual: "",
-        TabPrecoCliente: 1,
+        TabPrecoCliente: 0,
         IBGE: "5103403",
         // Endereço        
         Bairro: enderecoEntrega.Bairro,
@@ -241,10 +242,8 @@ export default function CartPage() {
         },
         body: JSON.stringify(pedidoData)
       });
-      
-      // Verificar resposta
+
       const result = await response.json();
-      
       console.log('Resposta da API de pedido:', result);
       
       if (!response.ok) {
