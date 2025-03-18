@@ -179,7 +179,7 @@ export default function CartPage() {
         Contrato: 391,
         Empresa: 1,
         Tipo: "O",
-        IdUsuario: 0,
+        IdUsuario: 2,
         // Dados do cliente
         Cliente: 0, // ID do cliente padrão ou registrado
         ClienteNome: user?.Nome || "Cliente Padrão",
@@ -191,8 +191,9 @@ export default function CartPage() {
         Fone2: "",
         Fone3: "",
         InscEstadual: "",
-        
-        // Endereço
+        TabPrecoCliente: 1,
+        IBGE: "5103403",
+        // Endereço        
         Bairro: enderecoEntrega.Bairro,
         CEP: enderecoEntrega.CEP,
         Cidade: enderecoEntrega.Cidade,
