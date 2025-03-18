@@ -212,7 +212,7 @@ export default function CartPage() {
         ValorPedido: finalTotal,
         Vendedor: 2,
         VendedorNome: "Ecommerce Web",
-        Observacao: "Pedido enviado via WhatsApp",
+        Observacao: "Pedido enviado via Ecommerce Web",
         
         // Itens do pedido
         Itens: items.map(item => ({
