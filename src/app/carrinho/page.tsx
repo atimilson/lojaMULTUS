@@ -224,6 +224,7 @@ export default function CartPage() {
           ValorUnitarioLiquido: item.PrecoPromocional || item.Preco || 0,
           ValorTotalLiquido: (item.PrecoPromocional || item.Preco || 0) * item.Quantidade,
           Unidade: "UN",
+          ConversaoUnidade: "N",
           Complemento: item.Descricao || ""
         }))
       };
