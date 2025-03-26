@@ -47,6 +47,7 @@ export default function CartPage() {
   const router = useRouter();
   const { user, isLoading: userLoading, saveUser } = useEcommerceUser();
   const { addresses, isLoading: addressLoading } = useEcommerceAddress();
+  const [deliveryOption, setDeliveryOption] = useState('home'); // 'store' para retirar na loja ou 'home' para entrega
 
   useEffect(() => {
     if (!items || items.length === 0) {
@@ -59,6 +60,21 @@ export default function CartPage() {
       router.push("/minha-conta?returnTo=/carrinho");
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    // Se selecionar retirada na loja, definir frete como zero
+    if (deliveryOption === 'store') {
+      setSelectedShipping({
+        codigo: 'store-pickup',
+        valor: '0.00',
+        prazo: '1',
+        servico: 'Retirada na Loja'
+      });
+    } else if (deliveryOption === 'home' && selectedShipping?.codigo === 'store-pickup') {
+      // Se trocar de retirada para entrega, limpar a seleção de frete
+      setSelectedShipping(null);
+    }
+  }, [deliveryOption, setSelectedShipping]);
 
   if (!isAuthenticated) {
     return null; // ou um componente de loading
@@ -482,12 +498,107 @@ export default function CartPage() {
 
               {/* Cálculo de Frete */}
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <ShippingCalculator 
-                  items={items} 
-                  total={total}
-                  onSelectShipping={setSelectedShipping}
-                  selectedShipping={selectedShipping}
-                />
+                <div className="flex items-center gap-2 mb-4">
+                  <TruckIcon className="w-5 h-5 text-primary" />
+                  <h2 className="font-medium text-gray-900">Opções de Entrega</h2>
+                </div>
+                
+                <div className="mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                      onClick={() => setDeliveryOption('store')}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        deliveryOption === 'store' 
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary' 
+                          : 'border-gray-200 hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          deliveryOption === 'store' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <ShieldCheckIcon className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">Retirar na loja</h3>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              deliveryOption === 'store' 
+                                ? 'border-primary' 
+                                : 'border-gray-300'
+                            }`}>
+                              {deliveryOption === 'store' && (
+                                <div className="w-3 h-3 rounded-full bg-primary" />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">Sem custos de frete</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      onClick={() => setDeliveryOption('home')}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        deliveryOption === 'home' 
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary' 
+                          : 'border-gray-200 hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          deliveryOption === 'home' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <TruckIcon className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">Receber em casa</h3>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              deliveryOption === 'home' 
+                                ? 'border-primary' 
+                                : 'border-gray-300'
+                            }`}>
+                              {deliveryOption === 'home' && (
+                                <div className="w-3 h-3 rounded-full bg-primary" />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">Calcule o frete abaixo</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {deliveryOption === 'store' ? (
+                  <div className="bg-green-50 border border-green-100 p-5 rounded-lg shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-green-100 p-2 rounded-full text-green-600">
+                        <ShieldCheckIcon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-green-800 mb-1">
+                          Retirada na loja confirmada
+                        </h3>
+                        <p className="text-green-700">
+                          Frete: <span className="font-bold">GRÁTIS</span>
+                        </p>
+                        <p className="text-sm text-green-600 mt-2">
+                          Você poderá retirar seu pedido na loja em até 1 dia útil após a confirmação do pagamento. 
+                          Nossa equipe entrará em contato quando estiver disponível.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <ShippingCalculator 
+                    items={items} 
+                    total={total}
+                    onSelectShipping={setSelectedShipping}
+                    selectedShipping={selectedShipping}
+                  />
+                )}
               </div>
             </div>
           </div>
