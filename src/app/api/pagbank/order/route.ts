@@ -141,9 +141,9 @@ export async function POST(request: Request) {
         IE: "",
         Fone: customer.phone,
         DataPrevEntrega: formatDate(sevenDaysFromNow),
-        TipoFrete: 1,
-        CodTransportador: 1,
-        NomeTransportador: "CONSUMIDOR",
+        TipoFrete: shippingValue > 0 ? 3 : 1,
+        CodTransportador: shippingValue > 0 ? 1 : 0,
+        NomeTransportador: shippingValue > 0 ? "CONSUMIDOR" : "",
         Endereco: {
           Nome: customer.name,
           Endereco: shipping.street,
