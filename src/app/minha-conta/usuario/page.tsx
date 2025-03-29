@@ -16,7 +16,8 @@ import {
   ChevronRightIcon,
   PlusCircleIcon,
   CheckBadgeIcon,
-  CogIcon
+  CogIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -32,6 +33,7 @@ import { AddressModal } from '@/components/AddressModal';
 import { useGetApiEcommerceUsuarioEndereco } from '@/api/generated/mCNSistemas';
 import { BiEditAlt } from 'react-icons/bi';
 import { Header } from '@/components/Header';
+import axiosInstance from '@/api/axios-instance';
 
 // Schema de validação
 const userFormSchema = z.object({
@@ -50,6 +52,7 @@ export default function UserAccountPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<UsuarioEcommerceEnderecoDto | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { logout, usuario } = useAuth();
   const router = useRouter();
   const { user, isLoading: userLoading, saveUser } = useEcommerceUser();
@@ -122,6 +125,26 @@ export default function UserAccountPage() {
       }
     }
   };
+
+  useEffect(() => {
+    const verificarAdmin = async () => {
+      if (user?.Email) {
+        try {
+          const response = await axiosInstance.get(`/api/ecommerce/administrador?empresa=1&email=${user.Email}`);
+          // Se a requisição retornar com sucesso (status 200), define o usuário como administrador
+          if (response) {
+            setIsAdmin(true);
+          }
+        } catch (error) {
+          // Se ocorrer um erro na requisição, não é administrador
+          console.log("Não é administrador");
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    verificarAdmin();
+  }, [user?.Email]);
 
   if (userLoading || addressLoading) {
     return <Loading />;
@@ -218,6 +241,16 @@ export default function UserAccountPage() {
                       <HeartIcon className="w-5 h-5" />
                       <span>Favoritos</span>
                     </button>
+                    
+                    {isAdmin && (
+                      <Link 
+                        href="/admin/dashboard" 
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100 mt-2"
+                      >
+                        <ShieldCheckIcon className="w-5 h-5 text-primary" />
+                        <span>Painel Administrador</span>
+                      </Link>
+                    )}
                     
                     <hr className="my-2 border-gray-200" />
                     
