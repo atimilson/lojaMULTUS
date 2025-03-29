@@ -7,7 +7,7 @@ export default defineConfig({
       mode: 'split',
       target: './src/api/generated',
       client: 'swr',
-      baseUrl: 'https://pedidoexterno.mcnsistemas.net.br',      
+      baseUrl: 'https://pedidoexternohomolog.mcnsistemas.net.br',      
       prettier: true,
       override: {
         mutator: {

@@ -62,7 +62,7 @@ export default function Home() {
         try {
           const credentials = btoa('lu813em9u3l510a:wf4g5ru813em9u3l510a');
           const response = await fetch(
-            'https://pedidoexterno.mcnsistemas.net.br/api/produto/ecommerce/destaques?contrato=391',
+            'https://pedidoexternohomolog.mcnsistemas.net.br/api/produto/ecommerce/destaques?contrato=391',
             {
               headers: {
                 'Authorization': `Basic ${credentials}`

@@ -85,7 +85,7 @@ export default function LoginPage() {
     try {
       // const response: any = await axios.get(`https://pedidoexterno.mcnsistemas.net.br/api/cliente?cliente=0&CPFouCNPJ=${documento}`);
       const token = localStorage.getItem('token');
-      const response: any = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api/cliente?cliente=0&CPFouCNPJ=${documento}`,
+      const response: any = await fetch(`https://pedidoexternohomolog.mcnsistemas.net.br/api/cliente?cliente=0&CPFouCNPJ=${documento}`,
         {
           method: 'GET',
           headers: {
@@ -272,7 +272,7 @@ export default function LoginPage() {
   const verificarUsuarioPorEmail = async (email: string) => {
     try {
       const token = await localStorage.getItem('token');
-      const response = await fetch(`https://pedidoexterno.mcnsistemas.net.br/api/ecommerce/usuario/existe?email=${encodeURIComponent(email)}`,
+      const response = await fetch(`https://pedidoexternohomolog.mcnsistemas.net.br/api/ecommerce/usuario/existe?email=${encodeURIComponent(email)}`,
         {
           method: 'GET',
           headers: {
@@ -480,50 +480,7 @@ export default function LoginPage() {
                           </div>
                         </div>
                         
-                        <div>
-                          <label htmlFor="Senha" className="block text-sm font-medium text-gray-700 mb-1">
-                            Senha
-                          </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                            </div>
-                            <input
-                              type="password"
-                              id="Senha"
-                              name="Senha"
-                              value={senha}
-                              onChange={handleChange}
-                              required
-                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                              placeholder="Mínimo 8 caracteres"
-                            />
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            A senha deve ter no mínimo 8 caracteres, incluindo letras e caracteres especiais.
-                          </p>
-                        </div>
-
-                        <div>
-                          <label htmlFor="confirmarSenha" className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirmar Senha
-                          </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                            </div>
-                            <input
-                              type="password"
-                              id="confirmarSenha"
-                              name="confirmarSenha"
-                              value={confirmarSenha}
-                              onChange={handleChange}
-                              required
-                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
-                              placeholder="Confirme sua senha"
-                            />
-                          </div>
-                        </div>
+                        
                       </>
                     ) : (
                       // Formulário completo para novo cliente
@@ -712,6 +669,50 @@ export default function LoginPage() {
                     )}
 
                     {/* Campos comuns para ambos os casos */}
+                    <div>
+                          <label htmlFor="Senha" className="block text-sm font-medium text-gray-700 mb-1">
+                            Senha
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                              type="password"
+                              id="Senha"
+                              name="Senha"
+                              value={senha}
+                              onChange={handleChange}
+                              required
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder="Mínimo 8 caracteres"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            A senha deve ter no mínimo 8 caracteres, incluindo letras e caracteres especiais.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor="confirmarSenha" className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirmar Senha
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                              type="password"
+                              id="confirmarSenha"
+                              name="confirmarSenha"
+                              value={confirmarSenha}
+                              onChange={handleChange}
+                              required
+                              className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-primary focus:border-primary"
+                              placeholder="Confirme sua senha"
+                            />
+                          </div>
+                        </div>
                     <div className="flex items-start">
                       <input
                         type="checkbox"
